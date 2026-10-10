@@ -350,27 +350,16 @@ function renderSales(){
     +'<div class="cap">A・B・C に伝えた数</div><div class="sub"><span><b>'+mk.A+'</b>A</span><span><b>'+mk.B+'</b>B</span><span><b>'+mk.C+'</b>C</span></div>');
   return tt;
 }
-// 使い方：やること3つを先に大きく。押すとどうなるかは、本物と同じ行を見本として見せる。例外は「こまったとき」に分ける。
-const EG_ROW='<span class="no">1</span><span class="nm"><i class="sq" style="background:var(--f-ichigo)"></i>いちご';
+// 使い方：やること3つと、まちがえたときだけ。ユーザーと決めた文言なので、変えるときは先に案を見せる。
 const HELP='<p class="lead">やることは3つだけ</p>'
-  +'<div class="stp"><div class="st"><b>1</b><span>注文された味を押す</span></div>'
-  +'<div class="eg"><div class="o wait">'+EG_ROW+'</span><span class="r"><span class="mk">A</span><span class="mk">B</span><span class="mk">C</span><span class="x eg-x">取消</span></span></div></div>'
-  +'<p class="egn">↑ 番号のついた黄色い行が出る</p></div>'
-  +'<div class="stp"><div class="st"><b>2</b><span>作る人のだれかに、声で注文を伝える</span></div></div>'
-  +'<div class="stp"><div class="st"><b>3</b><span>いま声をかけた相手のボタン<br>（A・B・C）を押す</span></div>'
-  +'<div class="eg"><div class="o sent">'+EG_ROW+'<small>✓ B に伝えた</small></span><span class="r"><span class="mk">A</span><span class="mk got">B</span><span class="mk">C</span><span class="x"></span></span></div></div>'
-  +'<p class="egn">↑ 黄色い行が消える</p></div>'
-  +'<p class="ht">黄色い行 ＝ まだ作る人に伝えていない注文。<br>伝え忘れを防ぐための印です。</p>'
-  +'<div class="cap">A・B・C はだれ？</div>'
-  +'<p class="ht">作る人を、部室棟側から順に<br>A、B、C と呼ぶ。<br>作る人が2人なら A と B、1人なら A。</p>'
-  +'<div class="cap">ダブルのとき</div>'
-  +'<p class="ht">先に「ダブル」を押して、<br>そのあと味を2つ押す。</p>'
-  +'<div class="cap">こまったとき</div>'
+  +'<div class="stp"><div class="st"><b>1</b><span>注文された味を押す</span></div></div>'
+  +'<div class="stp"><div class="st"><b>2</b><span>作る人に声で伝える</span></div></div>'
+  +'<div class="stp"><div class="st"><b>3</b><span>声をかけた相手のボタン<br>（A・B・C）を押す</span></div></div>'
+  +'<p class="ht">A・B・C は、作る人を部室棟側から順に。</p>'
+  +'<div class="cap">まちがえたら</div>'
   +'<dl class="qa">'
-  +'<div><dt>味を押しまちがえた</dt><dd>その行の右はしの「取消」を2回押す</dd></div>'
-  +'<div><dt>消すつもりのない注文を消した</dt><dd>上のタブ「取消」を開いて「戻す」</dd></div>'
-  +'<div><dt>A・B・C を押しまちがえた</dt><dd>上のタブ「伝えた」を開いて「戻す」</dd></div>'
-  +'<div><dt>上に赤い帯が出た</dt><dd>電波が切れている。帯が消えてから味を押す</dd></div>'
+  +'<div><dt>味を押しまちがえた</dt><dd>「取消」を2回</dd></div>'
+  +'<div><dt>それ以外</dt><dd>上の「取消」か「伝えた」を開いて「戻す」</dd></div>'
   +'</dl>';
 function renderTabs(nDone,total){
   const nNew=list().filter(o=>o.status==='new').length;

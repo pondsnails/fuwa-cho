@@ -286,7 +286,7 @@ function row(o,now,oldest){
 }
 function renderQueue(){
   const w=list().filter(o=>o.status==='new'||flash[o.id]).sort((a,b)=>a.no-b.no),now=Date.now();
-  const how='<div class="how"><b>2</b>製造に伝えたら、伝えた持ち場 A・B・C を押す</div>';
+  const how='<div class="how"><b>2</b>伝えた持ち場を押す　滝プラザ側から A・B・C</div>';
   // いちばん古い1件は上に固定し、残りを一覧に並べる。
   const here=tab==='queue',n=w.filter(o=>!flash[o.id]).length;
   $('#pin').classList.toggle('apart',!here&&w.length>0);
@@ -311,7 +311,7 @@ function renderSales(){
 const HELP='<ol class="steps">'
   +'<li><b>1</b><span>注文を受けたら、下の<strong>味</strong>を押す<small>1回押すと1個。番号がついて「未伝達」に並びます。2個なら2回押す</small></span></li>'
   +'<li><b>2</b><span>ダブルは<strong>ダブル</strong>を押してから、味を2つ押す<small>同じ味を2回でもOK。やめるときはもう一度ダブルを押す</small></span></li>'
-  +'<li><b>3</b><span>製造に伝えたら、伝えた持ち場 <i>A</i> <i>B</i> <i>C</i> を押す<small>A・B・C は人ではなく、製造の持ち場の名前です。人が交代しても変わりません<br>黄色い行がまだ伝えていない注文。次に伝える注文（いちばん古いもの）は、いつも一番上に出ています。押すと「伝達済み」へ移ります</small></span></li>'
+  +'<li><b>3</b><span>製造に伝えたら、伝えた持ち場 <i>A</i> <i>B</i> <i>C</i> を押す<small>持ち場は滝プラザ側から順に A・B・C。人ではなく場所の名前なので、交代しても変わりません<br>黄色い行がまだ伝えていない注文。次に伝える注文（いちばん古いもの）は、いつも一番上に出ています。押すと「伝達済み」へ移ります</small></span></li>'
   +'<li><b>4</b><span>まちがえたとき<small>注文の入れまちがい：「取消」を2回押す<br>持ち場の押しまちがい：上の「伝達済み」を開いて「戻す」</small></span></li>'
   +'<li><b>5</b><span>赤い帯が出たら電波が切れています<small>どこに伝えたかの記録は、電波が戻ると自動で送られます。注文は入らないので、帯が消えてからもう一度押す</small></span></li>'
   +'<li><b>6</b><span>全員が同じ画面を見ています<small>誰のスマホで押しても、すぐ全員に反映されます。番号は日ごとに1番から</small></span></li>'

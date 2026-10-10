@@ -115,11 +115,20 @@ tfoot td{font-weight:700;font-size:18px}
 .steps small{display:block;margin-top:2px;font-size:13px;font-weight:400;color:var(--muted)}
 .steps i{display:inline-block;padding:0 6px;border-radius:3px;background:var(--blue);color:#fff;font-style:normal;font-weight:700}
 .sheet{position:fixed;top:0;bottom:0;left:0;right:0;z-index:5;display:flex;align-items:center;justify-content:center;padding:calc(20px + env(safe-area-inset-top,0px)) 16px calc(20px + env(safe-area-inset-bottom,0px));background:rgba(22,25,28,.6)}
-.sheet .box{display:flex;flex-direction:column;width:100%;max-width:440px;max-height:100%;background:var(--bg);border-radius:4px;overflow:hidden}
+.sheet .box{display:flex;flex-direction:column;width:100%;max-width:440px;max-height:100%;background:var(--panel);border-radius:6px;overflow:hidden}
 .sheet[hidden]{display:none}
-.sheet header{padding-top:0;background:var(--panel);border-bottom:1px solid var(--line)}
+.sheet header{position:relative;justify-content:center;height:46px;padding-top:0;border-bottom:1px solid var(--line)}
+.sheet header .helpbtn{position:absolute;right:6px;top:0;height:46px;margin:0;font-size:14px}
+.lead{margin:0;padding:18px 14px 6px;font-size:19px;font-weight:700;letter-spacing:.02em}
+.stp{border-bottom:1px solid var(--line)}
+.st{display:flex;align-items:flex-start;gap:10px;padding:13px 14px 12px;font-size:16px;font-weight:600;line-height:1.45}
+.st b{flex:none;width:1.65em;height:1.65em;margin-top:-1px;border-radius:3px;background:var(--ink);color:#fff;font-size:14px;line-height:1.65em;text-align:center}
+.eg{border-top:1px solid var(--line);pointer-events:none}
+.eg .o.sent{animation:none}
+.eg-x{display:inline-flex;align-items:center;justify-content:center}
+.egn{margin:0;padding:6px 14px 11px;font-size:12px;color:var(--muted)}
 .sheet .body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
-.sheet .foot{flex:none;padding:10px;background:var(--strip);border-top:1px solid var(--line)}
+.sheet .foot{flex:none;padding:10px;border-top:1px solid var(--line)}
 .back{display:block;width:100%;height:48px;margin:0;border-radius:3px;background:var(--blue);color:#fff;font-weight:700}
 .back:active{background:#0c5f82}
 .cap{padding:7px 14px;font-size:12px;color:var(--muted);background:var(--strip);border-bottom:1px solid var(--line)}
@@ -313,7 +322,7 @@ function row(o,now,oldest){
 }
 function renderQueue(){
   const w=list().filter(o=>o.status==='new'||flash[o.id]).sort((a,b)=>a.no-b.no),now=Date.now();
-  const how='<div class="how"><b>2</b>作る人に伝えたら、その人のボタンを押す<small>部室棟側の人から順に A、B、C</small></div>';
+  const how='<div class="how"><b>2</b>作る人に声をかけたら、その相手のボタンを押す<small>部室棟側の人から順に A、B、C</small></div>';
   // いちばん古い1件は上に固定し、残りを一覧に並べる。
   const here=tab==='queue',n=w.filter(o=>!flash[o.id]).length;
   $('#pin').classList.toggle('apart',!here&&w.length>0);
@@ -338,26 +347,27 @@ function renderSales(){
     +'<div class="cap">A・B・C に伝えた数</div><div class="sub"><span><b>'+mk.A+'</b>A</span><span><b>'+mk.B+'</b>B</span><span><b>'+mk.C+'</b>C</span></div>');
   return tt;
 }
-// 使い方：やること3つを先に大きく。例外は「こまったとき」に分ける。黄色い行は見本をそのまま見せる。
-const HELP='<h2 class="hh">やることは3つだけ</h2>'
-  +'<ol class="steps">'
-  +'<li><b>1</b><span>注文された味を押す<small>→ 番号のついた黄色い行が出る</small></span></li>'
-  +'<li><b>2</b><span>作る人に声で伝える</span></li>'
-  +'<li><b>3</b><span>伝えた人のボタンを押す<small>→ 黄色い行が消える</small></span></li>'
-  +'</ol>'
-  +'<div class="cap">見本</div>'
-  +'<div class="o wait" aria-hidden="true"><span class="no">1</span><span class="nm"><i class="sq" style="background:var(--f-ichigo)"></i>いちご</span><span class="r"><span class="mk">A</span><span class="mk">B</span><span class="mk">C</span><span class="x eg">取消</span></span></div>'
-  +'<p class="ht">黄色い行が残っている ＝ まだ誰にも伝えていない注文</p>'
-  +'<h2 class="hh">A・B・C はだれ？</h2>'
-  +'<p class="ht">部室棟側に立っている人から順に A、B、C。<br>2人なら A と B、1人なら A。</p>'
-  +'<h2 class="hh">ダブルのとき</h2>'
-  +'<p class="ht">「ダブル」を押してから、味を2つ押す。</p>'
-  +'<h2 class="hh">こまったとき</h2>'
+// 使い方：やること3つを先に大きく。押すとどうなるかは、本物と同じ行を見本として見せる。例外は「こまったとき」に分ける。
+const EG_ROW='<span class="no">1</span><span class="nm"><i class="sq" style="background:var(--f-ichigo)"></i>いちご';
+const HELP='<p class="lead">やることは3つだけ</p>'
+  +'<div class="stp"><div class="st"><b>1</b><span>注文された味を押す</span></div>'
+  +'<div class="eg"><div class="o wait">'+EG_ROW+'</span><span class="r"><span class="mk">A</span><span class="mk">B</span><span class="mk">C</span><span class="x eg-x">取消</span></span></div></div>'
+  +'<p class="egn">↑ 番号のついた黄色い行が出る</p></div>'
+  +'<div class="stp"><div class="st"><b>2</b><span>作る人のだれかに、声で注文を伝える</span></div></div>'
+  +'<div class="stp"><div class="st"><b>3</b><span>いま声をかけた相手のボタン<br>（A・B・C）を押す</span></div>'
+  +'<div class="eg"><div class="o sent">'+EG_ROW+'<small>✓ B に伝えた</small></span><span class="r"><span class="mk">A</span><span class="mk got">B</span><span class="mk">C</span><span class="x"></span></span></div></div>'
+  +'<p class="egn">↑ 黄色い行が消える</p></div>'
+  +'<p class="ht">黄色い行 ＝ まだ作る人に伝えていない注文。<br>伝え忘れを防ぐための印です。</p>'
+  +'<div class="cap">A・B・C はだれ？</div>'
+  +'<p class="ht">作る人を、部室棟側から順に<br>A、B、C と呼ぶ。<br>作る人が2人なら A と B、1人なら A。</p>'
+  +'<div class="cap">ダブルのとき</div>'
+  +'<p class="ht">先に「ダブル」を押して、<br>そのあと味を2つ押す。</p>'
+  +'<div class="cap">こまったとき</div>'
   +'<dl class="qa">'
-  +'<div><dt>味をまちがえて押した</dt><dd>その行の「取消」を2回押す</dd></div>'
-  +'<div><dt>まちがえて取り消した</dt><dd>上の「取消」を開いて「戻す」</dd></div>'
-  +'<div><dt>A・B・C を押しまちがえた</dt><dd>上の「伝えた」を開いて「戻す」</dd></div>'
-  +'<div><dt>上に赤い帯が出た</dt><dd>電波がない。帯が消えるまで味は押さない</dd></div>'
+  +'<div><dt>味を押しまちがえた</dt><dd>その行の右はしの「取消」を2回押す</dd></div>'
+  +'<div><dt>消すつもりのない注文を消した</dt><dd>上のタブ「取消」を開いて「戻す」</dd></div>'
+  +'<div><dt>A・B・C を押しまちがえた</dt><dd>上のタブ「伝えた」を開いて「戻す」</dd></div>'
+  +'<div><dt>上に赤い帯が出た</dt><dd>電波が切れている。帯が消えてから味を押す</dd></div>'
   +'</dl>';
 function renderTabs(nDone,total){
   const nNew=list().filter(o=>o.status==='new').length;

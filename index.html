@@ -53,6 +53,10 @@ h2,summary{margin:0;padding:7px 14px;font-size:12px;font-weight:400;color:var(--
 .o .nm{font-weight:600;font-size:15px;overflow-wrap:anywhere}
 .o .nm small{display:block;font-weight:400;font-size:11px;color:var(--muted)}
 .o .r{display:flex;gap:6px;align-items:center}
+.o.sent{background:var(--blue);color:#fff}
+.o.sent .nm small{color:inherit;opacity:.85}
+.to{padding-right:6px;font-size:15px;font-weight:700;white-space:nowrap}
+.to b{margin-right:4px;font-size:26px;vertical-align:-3px}
 .sq{display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:2px}
 .mk{width:46px;height:44px;border-radius:3px;background:var(--blue);color:#fff;font-weight:700;font-size:17px}
 .mk:active{background:var(--blue-press)}
@@ -126,7 +130,7 @@ const LS='wataame-cho-v3-'+DAY;
 
 // server: 保存済みの注文（id→注文）。pend: まだ送れていない変更（id→差分）。
 let server={}, pend={}, online=false, loaded=false, es=null, lastBeat=0, t0=Date.now();
-let dbl=null, armCancel=null, busy=false, toastT=0, flushing=false, again=false;
+let flash={}, dbl=null, armCancel=null, busy=false, toastT=0, flushing=false, again=false;
 
 function loadLocal(){try{const x=JSON.parse(localStorage.getItem(LS)||'null');if(x){if(!BASE)server=x.server||{};pend=x.pend||{}}}catch(e){}}
 function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(BASE?{pend}:{server,pend:{}}))}catch(e){}}
@@ -218,10 +222,10 @@ function renderTiles(){
     +'<button class="tile wide'+(dbl?' on':'')+'" data-act="dbl"'+off+'><span class="name">ダブル</span><span class="price">¥'+DOUBLE+'</span></button>';
 }
 function renderQueue(){
-  const w=list().filter(o=>o.status==='new').sort((a,b)=>a.no-b.no);
+  const w=list().filter(o=>o.status==='new'||flash[o.id]).sort((a,b)=>a.no-b.no);
   const el=$('#queue');
   if(!w.length){el.innerHTML='<div class="none">なし</div>';return}
-  el.innerHTML=w.map(o=>'<div class="o"><span class="no">'+esc(o.no)+'</span>'
+  el.innerHTML=w.map(o=>flash[o.id]?'<div class="o sent"><span class="no">'+esc(o.no)+'</span><span class="nm">'+esc(label(o))+'</span><span class="r"><span class="to"><b>'+esc(flash[o.id])+'</b>に伝えた ✓</span></span></div>':'<div class="o"><span class="no">'+esc(o.no)+'</span>'
     +'<span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+hm(o.createdAt)+'</small></span>'
     +'<span class="r">'+['A','B','C'].map(m=>'<button class="mk" data-act="told" data-m="'+m+'" data-id="'+esc(o.id)+'" aria-label="製造'+m+'に伝えた">'+m+'</button>').join('')
     +(armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">取消</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(o.no)+'番を取り消す">×</button>')
@@ -265,7 +269,14 @@ document.addEventListener('click',e=>{
   if(a==='pick'){if(dbl){dbl.push(id);if(dbl.length===2)take('double',dbl.slice());else renderTiles()}else take('single',[id])}
   else if(a==='dbl'){dbl=dbl?null:[];renderTiles()}
   else if(a==='dblOff'){dbl=null;renderTiles()}
-  else if(a==='told')patchOrder(id,{status:'told',maker:b.dataset.m,toldAt:Date.now()});
+  else if(a==='told'){
+    // 押した行をしばらく青く残して、誰に伝えたかを見せてから伝達済みへ送る。
+    const m=b.dataset.m,o=list().find(x=>x.id===id);
+    flash[id]=m;setTimeout(()=>{delete flash[id];renderQueue()},1000);
+    if(navigator.vibrate)navigator.vibrate(40);
+    toast((o?o.no+'番　':'')+m+' に伝えた');
+    patchOrder(id,{status:'told',maker:m,toldAt:Date.now()});
+  }
   else if(a==='undo')patchOrder(id,{status:'new'});
   else if(a==='cancel'){armCancel=id;renderQueue();setTimeout(()=>{if(armCancel===id){armCancel=null;renderQueue()}},3000)}
   else if(a==='cancel2'){armCancel=null;patchOrder(id,{status:'cancel'})}

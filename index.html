@@ -32,7 +32,8 @@ h1 span{margin-left:8px;font-size:12px;font-weight:400;letter-spacing:0;color:va
 .alert{flex:none;padding:9px 14px;background:var(--danger);color:#fff;font-size:13px;font-weight:700;text-align:center}
 
 .seg{flex:none;display:flex;margin:0 12px 10px;border:1px solid var(--blue);border-radius:4px;overflow:hidden}
-.seg button{flex:1;height:36px;font-size:13px;color:var(--blue);white-space:nowrap}
+.seg button{flex:1;height:36px;font-size:12px;color:var(--blue);white-space:nowrap}
+.seg button:first-child{flex:1.35}
 .seg button+button{border-left:1px solid var(--blue)}
 .seg button:active{background:#d9eff9}
 .seg button.on{background:var(--blue);color:#fff}
@@ -63,9 +64,9 @@ main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;oversc
 .sq{display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:2px}
 .mk{display:inline-flex;align-items:center;justify-content:center;width:46px;height:44px;border-radius:3px;background:var(--blue);color:#fff;font-weight:700;font-size:17px}
 .mk:active{background:#0c5f82}
-.x{display:inline-block;min-width:34px;height:44px;color:var(--muted);font-size:12px}
+.x{display:inline-block;width:42px;height:44px;color:var(--muted);font-size:12px}
 .x:active,.link:active{background:#d9eff9;border-radius:3px}
-.x.arm,.x.arm:active{background:var(--danger);color:#fff;border-radius:3px;font-size:14px;font-weight:700;padding:0 8px}
+.x.arm,.x.arm:active{background:var(--danger);color:#fff;border-radius:3px;font-size:11px;font-weight:700;line-height:1.25;padding:0}
 .link{color:var(--blue);font-size:14px;min-height:44px;padding:0 8px}
 .who{display:inline-block;min-width:1.6em;text-align:center;font-weight:700;font-size:17px}
 .none{padding:28px 14px;color:var(--muted);font-size:14px;text-align:center}
@@ -139,7 +140,7 @@ tfoot td{font-weight:700;font-size:18px}
   </main>
   <div class="pad">
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <div class="how"><b>1</b>注文を聞いたら味を押す<small>1回で1個</small></div>
+    <div class="how"><b>1</b>注文された味を押す<small>2個なら2回</small></div>
     <div class="tiles" id="tiles"></div>
   </div>
 </div>
@@ -283,19 +284,19 @@ function row(o,now,oldest){
   return '<div class="o wait'+(late?' old':'')+'"><span class="no">'+esc(o.no)+'</span>'
     +'<span class="nm">'+dots(o)+esc(fl(o))+'<small'+(late?' class="late"':'')+'>'+(o.kind==='double'?'ダブル　':'')+(oldest?'<span class="tag">次に伝える</span>':'')+when+'</small></span>'
     +'<span class="r">'+['A','B','C'].map(m=>'<button class="mk" data-act="told" data-m="'+m+'" data-id="'+esc(o.id)+'" aria-label="製造'+m+'に伝えた">'+m+'</button>').join('')
-    +(armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">もう1回</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(o.no)+'番を取り消す">取消</button>')
+    +(armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">本当に<br>消す</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(o.no)+'番を取り消す">取消</button>')
     +'</span></div>';
 }
 function renderQueue(){
   const w=list().filter(o=>o.status==='new'||flash[o.id]).sort((a,b)=>a.no-b.no),now=Date.now();
-  const how='<div class="how"><b>2</b>作る人に伝えたら A・B・C を押す<small>滝プラザ側から A → B → C</small></div>';
+  const how='<div class="how"><b>2</b>作る人に伝えたら、その人のボタンを押す<small>部室棟側の人から順に A、B、C</small></div>';
   // いちばん古い1件は上に固定し、残りを一覧に並べる。
   const here=tab==='queue',n=w.filter(o=>!flash[o.id]).length;
   $('#pin').classList.toggle('apart',!here&&w.length>0);
   put($('#pin'),here?how+(w.length?row(w[0],now,w.length>1):'')
-    :w.length?'<button class="pinhead" data-act="tab" data-id="queue">未伝達が '+n+'件　次に伝えるのはこれ<span>一覧を見る</span></button>'+row(w[0],now,false):'');
+    :w.length?'<button class="pinhead" data-act="tab" data-id="queue">伝えてない注文 '+n+'件　次はこれ<span>一覧を見る</span></button>'+row(w[0],now,false):'');
   put($('#queue'),w.length>1?w.slice(1).map(o=>row(o,now,false)).join('')
-    :'<div class="none">'+(BASE&&!loaded?'読み込み中':w.length?'未伝達はこの1件だけです':'<strong>未伝達の注文はありません</strong>味を押すと、番号がついてここに出ます')+'</div>');
+    :'<div class="none">'+(BASE&&!loaded?'読み込み中':w.length?'伝えてない注文はこの1件だけです':'<strong>伝えてない注文はありません</strong>味を押すと、番号がついてここに出ます')+'</div>');
 }
 function renderDone(){
   const d=list().filter(o=>o.status==='told').sort((a,b)=>(b.toldAt||0)-(a.toldAt||0));
@@ -311,16 +312,18 @@ function renderSales(){
   return tt;
 }
 const HELP='<ol class="steps">'
-  +'<li><b>1</b><span>注文を聞いたら、味のボタンを押す<small>1回押すと1個。2個なら2回押す。番号がついて上に出ます</small></span></li>'
-  +'<li><b>2</b><span>ダブルは「ダブル」→ 味を2つ<small>同じ味を2回でもOK</small></span></li>'
-  +'<li><b>3</b><span>作る人に伝えたら <i>A</i> <i>B</i> <i>C</i> を押す<small>A・B・C は作る場所の名前。滝プラザ側から A → B → C<br>押すと黄色い行が消えます</small></span></li>'
-  +'<li><b>4</b><span>まちがえたら<small>注文をまちがえた：「取消」を2回押す<br>A・B・C をまちがえた：上の「伝達済み」で「戻す」</small></span></li>'
-  +'<li><b>5</b><span>赤い帯は「電波がない」<small>帯が消えてから、注文を押し直す<br>A・B・C はそのまま押してOK（あとで自動で送られます）</small></span></li>'
-  +'<li><b>6</b><span>全員が同じ画面を見ています<small>誰のスマホで押しても、全員の画面に出ます</small></span></li>'
+  +'<li><b>1</b><span>注文された味を押す。2個なら2回押す。</span></li>'
+  +'<li><b>2</b><span>ダブルは、先に「ダブル」、そのあと味を2つ押す。</span></li>'
+  +'<li><b>3</b><span>押すと番号がついて、黄色い行で出る。黄色い行は「まだ誰にも伝えていない注文」。</span></li>'
+  +'<li><b>4</b><span>作る人に注文を伝えたら、その人のボタン（<i>A</i> <i>B</i> <i>C</i>）を押す。黄色い行が消える。</span></li>'
+  +'<li><b>5</b><span>A・B・C は、部室棟側に立っている人から順に A、B、C。2人なら A と B、1人なら A。</span></li>'
+  +'<li><b>6</b><span>味をまちがえたら、その行の「取消」を2回押す。</span></li>'
+  +'<li><b>7</b><span>A・B・C をまちがえたら、「伝えた」を開いて「戻す」を押す。</span></li>'
+  +'<li><b>8</b><span>上に赤い帯が出たら電波切れ。帯が消えるまで味は押さない。</span></li>'
   +'</ol><button class="back" data-act="tab" data-id="queue">注文の画面にもどる</button>';
 function renderTabs(nDone,total){
   const nNew=list().filter(o=>o.status==='new').length;
-  put($('#seg'),[['queue','未伝達',nNew],['done','伝達済み',nDone],['sales','集計',yen(total)]].map(t=>'<button data-act="tab" data-id="'+t[0]+'"'+(tab===t[0]?' class="on" aria-current="true"':'')+'>'+t[1]+'<b'+(t[0]==='queue'&&nNew?' class="hot"':'')+'>'+t[2]+'</b></button>').join(''));
+  put($('#seg'),[['queue','まだ伝えてない',nNew],['done','伝えた',nDone],['sales','集計',yen(total)]].map(t=>'<button data-act="tab" data-id="'+t[0]+'"'+(tab===t[0]?' class="on" aria-current="true"':'')+'>'+t[1]+'<b'+(t[0]==='queue'&&nNew?' class="hot"':'')+'>'+t[2]+'</b></button>').join(''));
   ['queue','done','sales','help'].forEach(k=>{$('#'+k).hidden=tab!==k});
   if(tab==='help')put($('#help'),HELP);
   $('#helpbtn').classList.toggle('on',tab==='help');
@@ -380,7 +383,7 @@ document.addEventListener('click',e=>{
     toast((o?o.no+'番　':'')+m+' に伝えた');
     patchOrder(id,{status:'told',maker:m,toldAt:Date.now()});
   }
-  else if(a==='undo'){const o=list().find(x=>x.id===id);patchOrder(id,{status:'new'});toast((o?o.no+'番を':'')+'未伝達に戻した')}
+  else if(a==='undo'){const o=list().find(x=>x.id===id);patchOrder(id,{status:'new'});toast((o?o.no+'番を':'')+'「まだ伝えてない」に戻した')}
   else if(a==='cancel'){armCancel=id;renderQueue();setTimeout(()=>{if(armCancel===id){armCancel=null;renderQueue()}},3000)}
   else if(a==='cancel2'){const o=list().find(x=>x.id===id);armCancel=null;patchOrder(id,{status:'cancel'});toast((o?o.no+'番を':'')+'取り消した')}
 });

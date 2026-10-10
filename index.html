@@ -83,6 +83,8 @@ tfoot td{font-weight:700;font-size:18px}
 /* 使い方：その場に書いてある一行の説明（.how）と、右上「使い方」で開く手順。 */
 .how{padding:6px 14px;font-size:12px;color:var(--ink);background:var(--strip);border-bottom:1px solid var(--line)}
 .how b{display:inline-block;min-width:1.5em;height:1.5em;margin-right:6px;border-radius:3px;background:var(--ink);color:#fff;font-weight:700;text-align:center;line-height:1.5em}
+.how small{margin-left:10px;font-size:11px;color:var(--muted)}
+.pin .how small{display:block;margin:1px 0 0 28px}
 .pad .how{margin:-10px -10px 8px;background:none;border-bottom:0;padding-top:8px;padding-bottom:0}
 /* いちばん古い未伝達は、どのタブでも・一覧をどこまで送っても、ここに出したままにする。 */
 .pin{flex:none;border-top:1px solid var(--line)}
@@ -137,7 +139,7 @@ tfoot td{font-weight:700;font-size:18px}
   </main>
   <div class="pad">
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <div class="how"><b>1</b>注文を受けたら味を押す（1回で1個）</div>
+    <div class="how"><b>1</b>注文を聞いたら味を押す<small>1回で1個</small></div>
     <div class="tiles" id="tiles"></div>
   </div>
 </div>
@@ -286,18 +288,18 @@ function row(o,now,oldest){
 }
 function renderQueue(){
   const w=list().filter(o=>o.status==='new'||flash[o.id]).sort((a,b)=>a.no-b.no),now=Date.now();
-  const how='<div class="how"><b>2</b>伝えた持ち場を押す　滝プラザ側から A・B・C</div>';
+  const how='<div class="how"><b>2</b>作る人に伝えたら A・B・C を押す<small>滝プラザ側から A → B → C</small></div>';
   // いちばん古い1件は上に固定し、残りを一覧に並べる。
   const here=tab==='queue',n=w.filter(o=>!flash[o.id]).length;
   $('#pin').classList.toggle('apart',!here&&w.length>0);
   put($('#pin'),here?how+(w.length?row(w[0],now,w.length>1):'')
     :w.length?'<button class="pinhead" data-act="tab" data-id="queue">未伝達が '+n+'件　次に伝えるのはこれ<span>一覧を見る</span></button>'+row(w[0],now,false):'');
   put($('#queue'),w.length>1?w.slice(1).map(o=>row(o,now,false)).join('')
-    :'<div class="none">'+(BASE&&!loaded?'読み込み中':w.length?'未伝達はこの1件だけです':'<strong>未伝達の注文はありません</strong>下の味を押すと、番号がついてここに並びます')+'</div>');
+    :'<div class="none">'+(BASE&&!loaded?'読み込み中':w.length?'未伝達はこの1件だけです':'<strong>未伝達の注文はありません</strong>味を押すと、番号がついてここに出ます')+'</div>');
 }
 function renderDone(){
   const d=list().filter(o=>o.status==='told').sort((a,b)=>(b.toldAt||0)-(a.toldAt||0));
-  put($('#done'),d.length?'<div class="cap">新しい順　押し間違いは「戻す」</div>'+d.slice(0,300).map(o=>'<div class="o"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+hm(o.toldAt)+'</small></span><span class="r"><span class="who">'+esc(o.maker||'?')+'</span><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button></span></div>').join(''):'<div class="none">まだありません</div>');
+  put($('#done'),d.length?'<div class="cap">A・B・C を押しまちがえたら「戻す」</div>'+d.slice(0,300).map(o=>'<div class="o"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+hm(o.toldAt)+'</small></span><span class="r"><span class="who">'+esc(o.maker||'?')+'</span><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button></span></div>').join(''):'<div class="none">まだありません</div>');
   return d.length;
 }
 function renderSales(){
@@ -305,16 +307,16 @@ function renderSales(){
   live().forEach(o=>{const k=o.kind==='double'?'ダブル':fl(o);by[k]=by[k]||{q:0,t:0};by[k].q++;by[k].t+=o.total;tq++;tt+=o.total;if(o.status==='told'&&o.maker in mk)mk[o.maker]++});
   const rows=FLAVORS.map(f=>f.name).concat('ダブル').map(k=>'<tr><td>'+esc(k)+'</td><td>'+(by[k]?by[k].q:0)+'</td><td>'+yen(by[k]?by[k].t:0)+'</td></tr>').join('');
   put($('#sales'),'<table><thead><tr><th>'+DAYLABEL+'の集計</th><th>個数</th><th>金額</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><td>合計</td><td>'+tq+'</td><td>'+yen(tt)+'</td></tr></tfoot></table>'
-    +'<div class="cap">持ち場ごとの伝えた数</div><div class="sub"><span><b>'+mk.A+'</b>A</span><span><b>'+mk.B+'</b>B</span><span><b>'+mk.C+'</b>C</span></div>');
+    +'<div class="cap">A・B・C に伝えた数</div><div class="sub"><span><b>'+mk.A+'</b>A</span><span><b>'+mk.B+'</b>B</span><span><b>'+mk.C+'</b>C</span></div>');
   return tt;
 }
 const HELP='<ol class="steps">'
-  +'<li><b>1</b><span>注文を受けたら、下の<strong>味</strong>を押す<small>1回押すと1個。番号がついて「未伝達」に並びます。2個なら2回押す</small></span></li>'
-  +'<li><b>2</b><span>ダブルは<strong>ダブル</strong>を押してから、味を2つ押す<small>同じ味を2回でもOK。やめるときはもう一度ダブルを押す</small></span></li>'
-  +'<li><b>3</b><span>製造に伝えたら、伝えた持ち場 <i>A</i> <i>B</i> <i>C</i> を押す<small>持ち場は滝プラザ側から順に A・B・C。人ではなく場所の名前なので、交代しても変わりません<br>黄色い行がまだ伝えていない注文。次に伝える注文（いちばん古いもの）は、いつも一番上に出ています。押すと「伝達済み」へ移ります</small></span></li>'
-  +'<li><b>4</b><span>まちがえたとき<small>注文の入れまちがい：「取消」を2回押す<br>持ち場の押しまちがい：上の「伝達済み」を開いて「戻す」</small></span></li>'
-  +'<li><b>5</b><span>赤い帯が出たら電波が切れています<small>どこに伝えたかの記録は、電波が戻ると自動で送られます。注文は入らないので、帯が消えてからもう一度押す</small></span></li>'
-  +'<li><b>6</b><span>全員が同じ画面を見ています<small>誰のスマホで押しても、すぐ全員に反映されます。番号は日ごとに1番から</small></span></li>'
+  +'<li><b>1</b><span>注文を聞いたら、味のボタンを押す<small>1回押すと1個。2個なら2回押す。番号がついて上に出ます</small></span></li>'
+  +'<li><b>2</b><span>ダブルは「ダブル」→ 味を2つ<small>同じ味を2回でもOK</small></span></li>'
+  +'<li><b>3</b><span>作る人に伝えたら <i>A</i> <i>B</i> <i>C</i> を押す<small>A・B・C は作る場所の名前。滝プラザ側から A → B → C<br>押すと黄色い行が消えます</small></span></li>'
+  +'<li><b>4</b><span>まちがえたら<small>注文をまちがえた：「取消」を2回押す<br>A・B・C をまちがえた：上の「伝達済み」で「戻す」</small></span></li>'
+  +'<li><b>5</b><span>赤い帯は「電波がない」<small>帯が消えてから、注文を押し直す<br>A・B・C はそのまま押してOK（あとで自動で送られます）</small></span></li>'
+  +'<li><b>6</b><span>全員が同じ画面を見ています<small>誰のスマホで押しても、全員の画面に出ます</small></span></li>'
   +'</ol><button class="back" data-act="tab" data-id="queue">注文の画面にもどる</button>';
 function renderTabs(nDone,total){
   const nNew=list().filter(o=>o.status==='new').length;

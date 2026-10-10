@@ -45,19 +45,26 @@ h2,summary{margin:0;padding:7px 14px;font-size:12px;font-weight:400;color:var(--
 .hint{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;font-size:14px;font-weight:700}
 
 .list{background:var(--panel);border-top:1px solid var(--line)}
-.o{display:grid;grid-template-columns:2.2em minmax(0,1fr) auto;gap:8px;align-items:center;min-height:60px;padding:8px 10px 8px 14px;border-bottom:1px solid var(--line)}
+.o{max-height:120px;display:grid;grid-template-columns:2.2em minmax(0,1fr) auto;gap:8px;align-items:center;min-height:60px;padding:8px 10px 8px 14px;border-bottom:1px solid var(--line)}
 .o .no{font-weight:700;font-size:22px;font-variant-numeric:tabular-nums}
 .o .nm{font-weight:600;font-size:15px;overflow-wrap:anywhere}
 .o .nm small{display:block;font-weight:400;font-size:11px;color:var(--muted)}
 .o .r{display:flex;gap:6px;align-items:center}
-.o.sent{background:var(--blue);color:#fff}
-.o.sent .nm small{color:inherit;opacity:.85}
-.to{padding-right:6px;font-size:15px;font-weight:700;white-space:nowrap}
-.to b{margin-right:4px;font-size:26px;vertical-align:-3px}
+/* 伝えた行：押したボタンの側から青が広がり、押した文字だけ白抜きでその場に残る。少し見せてから畳む。 */
+.o.sent{color:#fff;background:linear-gradient(var(--blue),var(--blue)) right/100% 100% no-repeat;animation:wipe .16s ease-out}
+.o.sent .nm small{color:inherit;font-size:13px;font-weight:700}
+.o.sent .mk{background:none;color:transparent}
+.o.sent .mk.got{background:#fff;color:var(--blue)}
+.o.sent .x{visibility:hidden}
+.o.sent .sq{box-shadow:0 0 0 1px #fff}
+.o.sent.out{overflow:hidden;animation:fold .2s ease-in forwards}
+@keyframes wipe{from{background-size:0 100%}}
+@keyframes fold{to{max-height:0;min-height:0;padding-top:0;padding-bottom:0;opacity:0}}
+@media (prefers-reduced-motion:reduce){.o.sent,.o.sent.out{animation:none}}
 .sq{display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:2px}
-.mk{width:46px;height:44px;border-radius:3px;background:var(--blue);color:#fff;font-weight:700;font-size:17px}
+.mk{display:inline-flex;align-items:center;justify-content:center;width:46px;height:44px;border-radius:3px;background:var(--blue);color:#fff;font-weight:700;font-size:17px}
 .mk:active{background:#0c5f82}
-.x{min-width:34px;height:44px;color:var(--muted);font-size:20px}
+.x{display:inline-block;min-width:34px;height:44px;color:var(--muted);font-size:20px}
 .x:active,.link:active{background:#d9eff9;border-radius:3px}
 .x.arm,.x.arm:active{background:var(--danger);color:#fff;border-radius:3px;font-size:14px;font-weight:700;padding:0 8px}
 .link{color:var(--blue);font-size:14px;min-height:44px;padding:0 6px}
@@ -226,7 +233,7 @@ function renderQueue(){
   const w=list().filter(o=>o.status==='new'||flash[o.id]).sort((a,b)=>a.no-b.no);
   const el=$('#queue');
   if(!w.length){put(el,'<div class="none">なし</div>');return}
-  put(el,w.map(o=>flash[o.id]?'<div class="o sent"><span class="no">'+esc(o.no)+'</span><span class="nm">'+esc(label(o))+'</span><span class="r"><span class="to"><b>'+esc(flash[o.id])+'</b>に伝えた ✓</span></span></div>':'<div class="o"><span class="no">'+esc(o.no)+'</span>'
+  put(el,w.map(o=>flash[o.id]?'<div class="o sent'+(flash[o.id].out?' out':'')+'"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>✓ '+esc(flash[o.id].m)+' に伝えた</small></span><span class="r">'+['A','B','C'].map(m=>'<span class="mk'+(m===flash[o.id].m?' got':'')+'">'+m+'</span>').join('')+'<span class="x"></span></span></div>':'<div class="o"><span class="no">'+esc(o.no)+'</span>'
     +'<span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+hm(o.createdAt)+'</small></span>'
     +'<span class="r">'+['A','B','C'].map(m=>'<button class="mk" data-act="told" data-m="'+m+'" data-id="'+esc(o.id)+'" aria-label="製造'+m+'に伝えた">'+m+'</button>').join('')
     +(armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">取消</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(o.no)+'番を取り消す">×</button>')
@@ -287,7 +294,9 @@ document.addEventListener('click',e=>{
   else if(a==='told'){
     // 押した行をしばらく青く残して、誰に伝えたかを見せてから伝達済みへ送る。
     const m=b.dataset.m,o=list().find(x=>x.id===id);
-    flash[id]=m;setTimeout(()=>{delete flash[id];renderQueue()},1000);
+    const f=flash[id]={m,out:false};
+    setTimeout(()=>{if(flash[id]===f){f.out=true;renderQueue()}},900);
+    setTimeout(()=>{if(flash[id]===f){delete flash[id];renderQueue()}},1120);
     if(navigator.vibrate)navigator.vibrate(40);
     toast((o?o.no+'番　':'')+m+' に伝えた');
     patchOrder(id,{status:'told',maker:m,toldAt:Date.now()});

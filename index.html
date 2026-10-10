@@ -38,10 +38,6 @@ h1 span{margin-left:8px;font-size:12px;font-weight:400;letter-spacing:0;color:va
 .seg button.on{background:var(--blue);color:#fff}
 .seg b{margin-left:5px;font-variant-numeric:tabular-nums}
 .seg b.hot{display:inline-block;min-width:22px;padding:1px 6px;border-radius:11px;background:var(--danger);color:#fff}
-/* 未伝達が画面に見えていないとき、注文ボタンのすぐ上に必ず出す帯。 */
-.more{flex:none;display:block;width:100%;min-height:44px;padding:8px 14px;background:#f5c400;color:#2b2500;font-size:15px;font-weight:700;text-align:center}
-.more:active{background:#d9ad00}
-.more[hidden]{display:none}
 
 main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--bg);border-top:1px solid var(--line)}
 .o{max-height:120px;display:grid;grid-template-columns:2em minmax(0,1fr) auto;gap:6px;align-items:center;min-height:60px;padding:8px 8px 8px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
@@ -88,7 +84,11 @@ tfoot td{font-weight:700;font-size:18px}
 .how{padding:6px 14px;font-size:12px;color:var(--ink);background:var(--strip);border-bottom:1px solid var(--line)}
 .how b{display:inline-block;min-width:1.5em;height:1.5em;margin-right:6px;border-radius:3px;background:var(--ink);color:#fff;font-weight:700;text-align:center;line-height:1.5em}
 .pad .how{margin:-10px -10px 8px;background:none;border-bottom:0;padding-top:8px;padding-bottom:0}
-#queue .how{position:sticky;top:0;z-index:1}
+/* いちばん古い未伝達は、どのタブでも・一覧をどこまで送っても、ここに出したままにする。 */
+.pin{flex:none;border-top:1px solid var(--line)}
+.pin .o{border-bottom:2px solid #c9b24a}
+.pin .o.old{border-bottom-color:#d98f80}
+.pin+main{border-top:0}
 .steps{margin:0;padding:0;list-style:none;background:var(--panel)}
 .steps li{display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;padding:12px 14px;border-bottom:1px solid var(--line);font-size:15px;-webkit-user-select:text;user-select:text}
 .steps li>b{font-size:22px;line-height:1.2}
@@ -120,13 +120,13 @@ tfoot td{font-weight:700;font-size:18px}
   <header><h1>わたあめ帳<span id="day"></span></h1><span class="mode" id="mode"></span><button class="helpbtn" id="helpbtn" data-act="tab" data-id="help">使い方</button></header>
   <div class="alert" id="alert" role="alert" hidden></div>
   <nav class="seg" id="seg" aria-label="表示の切り替え"></nav>
+  <div class="pin" id="pin"></div>
   <main id="pane">
     <div id="queue"></div>
     <div id="done" hidden></div>
     <div id="sales" hidden></div>
     <div id="help" hidden></div>
   </main>
-  <button class="more" id="more" data-act="more" hidden></button>
   <div class="pad">
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
     <div class="how"><b>1</b>注文を受けたら味を押す（1回で1個）</div>
@@ -261,16 +261,22 @@ function renderTiles(){
     ?'<button class="tile wide on" data-act="dbl"><span class="name">ダブル　'+(dbl.length?esc(F[dbl[0]].name)+'＋2つ目を選ぶ':'1つ目を選ぶ')+'</span><span class="price">やめる</span></button>'
     :'<button class="tile wide" data-act="dbl"><span class="name">ダブル</span><span class="price">¥'+DOUBLE+'</span></button>'));
 }
-function renderQueue(){
-  const w=list().filter(o=>o.status==='new'||flash[o.id]).sort((a,b)=>a.no-b.no);
-  const el=$('#queue'),now=Date.now();
-  const how='<div class="how"><b>2</b>製造に伝えたら、伝えた相手 A・B・C を押す</div>';
-  if(!w.length){put(el,how+'<div class="none">'+(BASE&&!loaded?'読み込み中':'<strong>未伝達の注文はありません</strong>下の味を押すと、番号がついてここに並びます')+'</div>');return}
-  put(el,how+w.map(o=>flash[o.id]?'<div class="o sent'+(flash[o.id].out?' out':'')+'"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>✓ '+esc(flash[o.id].m)+' に伝えた</small></span><span class="r">'+['A','B','C'].map(m=>'<span class="mk'+(m===flash[o.id].m?' got':'')+'">'+m+'</span>').join('')+'<span class="x"></span></span></div>':'<div class="o wait'+(now-o.createdAt>LATE?' old':'')+'"><span class="no">'+esc(o.no)+'</span>'
-    +'<span class="nm">'+dots(o)+esc(fl(o))+(now-o.createdAt>LATE?'<small class="late">'+(o.kind==='double'?'ダブル　':'')+Math.floor((now-o.createdAt)/60000)+'分前</small>':'<small>'+(o.kind==='double'?'ダブル　':'')+hm(o.createdAt)+'</small>')+'</span>'
+function row(o,now,oldest){
+  if(flash[o.id])return '<div class="o sent'+(flash[o.id].out?' out':'')+'"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>✓ '+esc(flash[o.id].m)+' に伝えた</small></span><span class="r">'+['A','B','C'].map(m=>'<span class="mk'+(m===flash[o.id].m?' got':'')+'">'+m+'</span>').join('')+'<span class="x"></span></span></div>';
+  const late=now-o.createdAt>LATE,when=late?Math.floor((now-o.createdAt)/60000)+'分前':hm(o.createdAt);
+  return '<div class="o wait'+(late?' old':'')+'"><span class="no">'+esc(o.no)+'</span>'
+    +'<span class="nm">'+dots(o)+esc(fl(o))+'<small'+(late?' class="late"':'')+'>'+(o.kind==='double'?'ダブル　':'')+when+(oldest?'　いちばん古い':'')+'</small></span>'
     +'<span class="r">'+['A','B','C'].map(m=>'<button class="mk" data-act="told" data-m="'+m+'" data-id="'+esc(o.id)+'" aria-label="製造'+m+'に伝えた">'+m+'</button>').join('')
     +(armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">もう1回</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(o.no)+'番を取り消す">取消</button>')
-    +'</span></div>').join(''));
+    +'</span></div>';
+}
+function renderQueue(){
+  const w=list().filter(o=>o.status==='new'||flash[o.id]).sort((a,b)=>a.no-b.no),now=Date.now();
+  const how='<div class="how"><b>2</b>製造に伝えたら、伝えた相手 A・B・C を押す</div>';
+  // いちばん古い1件は上に固定し、残りを一覧に並べる。
+  put($('#pin'),how+(w.length?row(w[0],now,w.length>1):''));
+  put($('#queue'),w.length>1?w.slice(1).map(o=>row(o,now,false)).join('')
+    :'<div class="none">'+(BASE&&!loaded?'読み込み中':w.length?'未伝達はこの1件だけです':'<strong>未伝達の注文はありません</strong>下の味を押すと、番号がついてここに並びます')+'</div>');
 }
 function renderDone(){
   const d=list().filter(o=>o.status==='told').sort((a,b)=>(b.toldAt||0)-(a.toldAt||0));
@@ -288,7 +294,7 @@ function renderSales(){
 const HELP='<ol class="steps">'
   +'<li><b>1</b><span>注文を受けたら、下の<strong>味</strong>を押す<small>1回押すと1個。番号がついて「未伝達」に並びます。2個なら2回押す</small></span></li>'
   +'<li><b>2</b><span>ダブルは<strong>ダブル</strong>を押してから、味を2つ押す<small>同じ味を2回でもOK。やめるときはもう一度ダブルを押す</small></span></li>'
-  +'<li><b>3</b><span>製造の人に伝えたら、伝えた相手 <i>A</i> <i>B</i> <i>C</i> を押す<small>黄色い行がまだ伝えていない注文。押すと「伝達済み」へ移ります</small></span></li>'
+  +'<li><b>3</b><span>製造の人に伝えたら、伝えた相手 <i>A</i> <i>B</i> <i>C</i> を押す<small>黄色い行がまだ伝えていない注文。いちばん古い注文は、いつも一番上に出ています。押すと「伝達済み」へ移ります</small></span></li>'
   +'<li><b>4</b><span>まちがえたとき<small>注文の入れまちがい：「取消」を2回押す<br>相手の押しまちがい：上の「伝達済み」を開いて「戻す」</small></span></li>'
   +'<li><b>5</b><span>赤い帯が出たら電波が切れています<small>伝えた相手の記録は、電波が戻ると自動で送られます。注文は入らないので、帯が消えてからもう一度押す</small></span></li>'
   +'<li><b>6</b><span>全員が同じ画面を見ています<small>誰のスマホで押しても、すぐ全員に反映されます。番号は日ごとに1番から</small></span></li>'
@@ -314,20 +320,7 @@ function renderMode(){
   $('#mode').textContent=t;
   const al=$('#alert');al.textContent=bad;al.hidden=!bad;
 }
-function render(){renderTiles();renderQueue();renderTabs(renderDone(),renderSales());renderMode();renderMore()}
-// 未伝達が見えていないとき（別のタブにいる／一覧の下に隠れている）は、注文ボタンの上の帯で知らせる。
-function renderMore(){
-  const el=$('#more'),w=list().filter(o=>o.status==='new').sort((a,b)=>a.no-b.no);
-  let t='';
-  if(w.length&&tab!=='queue')t='未伝達 '+w.length+'件（'+w.slice(0,4).map(o=>o.no).join('・')+(w.length>4?'…':'')+'番）を見る';
-  else if(w.length){
-    const bottom=$('#pane').getBoundingClientRect().bottom-24;
-    const n=[...document.querySelectorAll('#queue .o.wait')].filter(r=>r.getBoundingClientRect().top>bottom).length;
-    if(n)t='↓ 下にあと '+n+'件';
-  }
-  if(el.textContent!==t)el.textContent=t;
-  el.hidden=!t;
-}
+function render(){renderTiles();renderQueue();renderTabs(renderDone(),renderSales());renderMode()}
 function toBottom(){const m=$('#pane');m.scrollTop=m.scrollHeight}
 
 // 押した味をすぐ塗りつぶし、保存は裏で順番に行う。続けて押した分は待たせずに受け付ける。
@@ -358,7 +351,6 @@ document.addEventListener('click',e=>{
   }
   else if(a==='dbl'){dbl=dbl?null:[];renderTiles()}
   else if(a==='tab'){tab=id;tabAt=Date.now();render();$('#pane').scrollTop=0}
-  else if(a==='more'){if(tab!=='queue'){tab='queue';render();$('#pane').scrollTop=0}else toBottom();renderMore()}
   else if(a==='told'){
     // 押した行をしばらく青く残して、誰に伝えたかを見せてから伝達済みへ送る。
     const m=b.dataset.m,o=list().find(x=>x.id===id);
@@ -387,9 +379,7 @@ function awake(){try{if(navigator.wakeLock&&!document.hidden)navigator.wakeLock.
 document.addEventListener('visibilitychange',awake);awake();
 $('#day').textContent=DAYLABEL;
 loadLocal();if(Object.keys(pend).length){stuck=true;pendAt=Date.now()}render();
-// 一覧を動かしたら帯の件数を数え直す。
-$('#pane').addEventListener('scroll',()=>{tabAt=Date.now();renderMore()},{passive:true});
-window.addEventListener('resize',renderMore);
+$('#pane').addEventListener('scroll',()=>{tabAt=Date.now()},{passive:true});
 // 伝達済み・集計を開いたまま15秒さわらなければ、未伝達があるときは未伝達に戻す。
 setInterval(()=>{if(tab!=='queue'&&tab!=='help'&&Date.now()-tabAt>15000&&list().some(o=>o.status==='new')){tab='queue';render();$('#pane').scrollTop=0}},3000);
 if(BASE){

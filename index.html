@@ -114,7 +114,12 @@ tfoot td{font-weight:700;font-size:18px}
 .steps li>b{font-size:22px;line-height:1.2}
 .steps small{display:block;margin-top:2px;font-size:13px;font-weight:400;color:var(--muted)}
 .steps i{display:inline-block;padding:0 6px;border-radius:3px;background:var(--blue);color:#fff;font-style:normal;font-weight:700}
-.back{display:block;width:calc(100% - 28px);height:48px;margin:14px;border-radius:3px;background:var(--blue);color:#fff;font-weight:700}
+.sheet{position:fixed;top:0;bottom:0;left:0;right:0;z-index:5;display:flex;flex-direction:column;max-width:520px;margin:0 auto;background:var(--bg)}
+.sheet[hidden]{display:none}
+.sheet header{background:var(--panel);border-bottom:1px solid var(--line)}
+.sheet .body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.sheet .foot{flex:none;padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px));background:var(--strip);border-top:1px solid var(--line)}
+.back{display:block;width:100%;height:48px;margin:0;border-radius:3px;background:var(--blue);color:#fff;font-weight:700}
 .back:active{background:#0c5f82}
 .cap{padding:7px 14px;font-size:12px;color:var(--muted);background:var(--strip);border-bottom:1px solid var(--line)}
 
@@ -137,7 +142,7 @@ tfoot td{font-weight:700;font-size:18px}
 </head>
 <body>
 <div class="app">
-  <header><h1>わたあめ帳<span id="day"></span></h1><span class="mode" id="mode"></span><button class="helpbtn" id="helpbtn" data-act="tab" data-id="help">使い方</button></header>
+  <header><h1>わたあめ帳<span id="day"></span></h1><span class="mode" id="mode"></span><button class="helpbtn" id="helpbtn" data-act="help">使い方</button></header>
   <div class="alert" id="alert" role="alert" hidden></div>
   <nav class="seg" id="seg" aria-label="表示の切り替え"></nav>
   <div class="pin" id="pin"></div>
@@ -146,13 +151,19 @@ tfoot td{font-weight:700;font-size:18px}
     <div id="done" hidden></div>
     <div id="gone" hidden></div>
     <div id="sales" hidden></div>
-    <div id="help" hidden></div>
   </main>
   <div class="pad">
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
     <div class="how"><b>1</b>注文された味を押す<small>2個なら2回</small></div>
     <div class="tiles" id="tiles"></div>
   </div>
+</div>
+
+<!-- 使い方は、注文の画面の上に重ねて開く。見出しの帯と「とじる」は注文の画面と同じ部品。 -->
+<div class="sheet" id="help" role="dialog" aria-label="使い方" hidden>
+  <header><h1>使い方</h1><button class="helpbtn" data-act="helpOff">とじる</button></header>
+  <div class="body" id="helpbody"></div>
+  <div class="foot"><button class="back" data-act="helpOff">とじる</button></div>
 </div>
 
 <script>
@@ -344,13 +355,11 @@ const HELP='<h2 class="hh">やることは3つだけ</h2>'
   +'<div><dt>まちがえて取り消した</dt><dd>上の「取消」を開いて「戻す」</dd></div>'
   +'<div><dt>A・B・C を押しまちがえた</dt><dd>上の「伝えた」を開いて「戻す」</dd></div>'
   +'<div><dt>上に赤い帯が出た</dt><dd>電波がない。帯が消えるまで味は押さない</dd></div>'
-  +'</dl><button class="back" data-act="tab" data-id="queue">注文の画面にもどる</button>';
+  +'</dl>';
 function renderTabs(nDone,total){
   const nNew=list().filter(o=>o.status==='new').length;
   put($('#seg'),[['queue','まだ伝えてない',nNew],['done','伝えた',nDone],['gone','取消',list().filter(o=>o.status==='cancel').length],['sales','集計','']].map(t=>'<button data-act="tab" data-id="'+t[0]+'"'+(tab===t[0]?' class="on" aria-current="true"':'')+'>'+t[1]+'<b'+(t[0]==='queue'&&nNew?' class="hot"':'')+'>'+t[2]+'</b></button>').join(''));
-  ['queue','done','gone','sales','help'].forEach(k=>{$('#'+k).hidden=tab!==k});
-  if(tab==='help')put($('#help'),HELP);
-  $('#helpbtn').classList.toggle('on',tab==='help');
+  ['queue','done','gone','sales'].forEach(k=>{$('#'+k).hidden=tab!==k});
 }
 // つながっている間は右上に小さく、問題があるときだけ赤い帯で知らせる。
 function renderMode(){
@@ -395,6 +404,8 @@ document.addEventListener('click',e=>{
     const now=Date.now();if(lastTap.id===id&&now-lastTap.t<250)return;lastTap={id,t:now};
     if(dbl){dbl.push(id);if(dbl.length===2)take('double',dbl.slice());else renderTiles()}else take('single',[id])
   }
+  else if(a==='help'){put($('#helpbody'),HELP);$('#help').hidden=false;$('#helpbody').scrollTop=0}
+  else if(a==='helpOff')$('#help').hidden=true;
   else if(a==='dbl'){dbl=dbl?null:[];renderTiles()}
   else if(a==='tab'){tab=id;tabAt=Date.now();render();$('#pane').scrollTop=0}
   else if(a==='told'){

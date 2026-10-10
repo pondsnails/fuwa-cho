@@ -15,7 +15,7 @@
   --f-plain:#a3abb1; --f-ichigo:#ee5a7c; --f-grape:#8a5bc2; --f-blue:#2a7fc0; --f-lemon:#e3b90f; --f-orange:#f59a38;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;font-size:16px;line-height:1.4;-webkit-text-size-adjust:100%}
+body{margin:0;overscroll-behavior-y:contain;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;font-size:16px;line-height:1.4;-webkit-text-size-adjust:100%}
 .wrap{max-width:520px;margin:0 auto;padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))}
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
@@ -31,20 +31,17 @@ h1{margin:0;font-size:15px;font-weight:700;letter-spacing:.04em}
 
 h2,summary{margin:0;padding:7px 14px;font-size:12px;font-weight:400;color:var(--muted);background:var(--strip);border-bottom:1px solid var(--line)}
 .menu{padding:12px 12px 14px}
-.menu.dbl{background:#cfeaf7;box-shadow:inset 0 0 0 3px var(--blue)}
-.menu.dbl .hint{color:var(--blue-press)}
 .tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:68px;padding:0 2px;background:var(--panel);border:1px solid var(--c);border-bottom-width:4px;border-radius:3px}
-.tile:active{background:#e4f4fb}
-.tile:disabled{opacity:.45}
 .tile .name{font-size:14px;font-weight:600;white-space:nowrap}
 .tile .price{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .tile.wide{grid-column:1 / -1;flex-direction:row;gap:10px;min-height:52px;--c:var(--blue);color:var(--blue)}
 .tile.wide .price{color:inherit;opacity:.8}
-.tile.on,.tile.on:active{background:var(--blue);color:#fff}
-.tile.sel,.tile.sel:active{background:var(--c);color:#fff}
-.tile.sel[data-id=lemon]{color:var(--ink)}
-.tile.sel .price{color:inherit;opacity:.9}
+/* 押したボタンは、その色で塗りつぶす。押した瞬間（:active）と、押したあと（.hit / .sel / .on）で同じ見た目。 */
+.tile:active,.tile.hit,.tile.sel,.tile.on{background:var(--c);color:#fff}
+.tile[data-id=lemon]:active,.tile.hit[data-id=lemon],.tile.sel[data-id=lemon]{color:var(--ink)}
+.tile:active .price,.tile.hit .price,.tile.sel .price,.tile.on .price{color:inherit;opacity:.95}
+.tile.hit .price{font-size:14px;font-weight:700}
 .hint{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;font-size:14px;font-weight:700}
 
 .list{background:var(--panel);border-top:1px solid var(--line)}
@@ -59,9 +56,10 @@ h2,summary{margin:0;padding:7px 14px;font-size:12px;font-weight:400;color:var(--
 .to b{margin-right:4px;font-size:26px;vertical-align:-3px}
 .sq{display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:2px}
 .mk{width:46px;height:44px;border-radius:3px;background:var(--blue);color:#fff;font-weight:700;font-size:17px}
-.mk:active{background:var(--blue-press)}
+.mk:active{background:#0c5f82}
 .x{min-width:34px;height:44px;color:var(--muted);font-size:20px}
-.x.arm{color:var(--danger);font-size:14px;font-weight:700;padding:0 4px}
+.x:active,.link:active{background:#d9eff9;border-radius:3px}
+.x.arm,.x.arm:active{background:var(--danger);color:#fff;border-radius:3px;font-size:14px;font-weight:700;padding:0 8px}
 .link{color:var(--blue);font-size:14px;min-height:44px;padding:0 6px}
 .who{display:inline-block;min-width:1.6em;text-align:center;font-weight:700}
 .none{padding:14px;border-bottom:1px solid var(--line);color:var(--muted);font-size:14px}
@@ -130,7 +128,7 @@ const LS='wataame-cho-v3-'+DAY;
 
 // server: 保存済みの注文（id→注文）。pend: まだ送れていない変更（id→差分）。
 let server={}, pend={}, online=false, loaded=false, es=null, lastBeat=0, t0=Date.now();
-let flash={}, dbl=null, armCancel=null, busy=false, toastT=0, flushing=false, again=false;
+let flash={}, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
 
 function loadLocal(){try{const x=JSON.parse(localStorage.getItem(LS)||'null');if(x){if(!BASE)server=x.server||{};pend=x.pend||{}}}catch(e){}}
 function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(BASE?{pend}:{server,pend:{}}))}catch(e){}}
@@ -214,27 +212,30 @@ const fl=o=>flv(o).map(f=>F[f]?F[f].name:f).join('＋');
 const label=o=>(o.kind==='double'?'ダブル ':'')+fl(o);
 const dots=o=>flv(o).map(f=>'<i class="sq" style="background:var('+(F[f]?F[f].c:'--line')+')"></i>').join('');
 
+// 中身が変わったときだけ書き換える。他の端末の更新で、押している最中のボタンが作り直されてタップが消えるのを防ぐ。
+function put(el,html){if(el.__h!==html){el.__h=html;el.innerHTML=html}}
 function renderTiles(){
-  const off=busy?' disabled':'';
-  $('.menu').classList.toggle('dbl',!!dbl);
-  $('#hint').innerHTML=dbl?'<div class="hint"><span>ダブル：'+(dbl.length?esc(F[dbl[0]].name)+'＋2つ目':'1つ目')+'を選ぶ</span><button class="link" data-act="dblOff">やめる</button></div>':'';
-  $('#tiles').innerHTML=FLAVORS.map(f=>'<button class="tile'+(dbl&&dbl[0]===f.id?' sel':'')+'" style="--c:var('+f.c+')" data-act="pick" data-id="'+f.id+'"'+off+'><span class="name">'+f.name+'</span>'+(dbl?(dbl[0]===f.id?'<span class="price">1つ目</span>':''):'<span class="price">¥'+f.price+'</span>')+'</button>').join('')
-    +'<button class="tile wide'+(dbl?' on':'')+'" data-act="dbl"'+off+'><span class="name">ダブル</span><span class="price">¥'+DOUBLE+'</span></button>';
+  put($('#hint'),dbl?'<div class="hint"><span>ダブル：'+(dbl.length?esc(F[dbl[0]].name)+'＋2つ目':'1つ目')+'を選ぶ</span><button class="link" data-act="dblOff">やめる</button></div>':'');
+  put($('#tiles'),FLAVORS.map(f=>{
+    const first=dbl&&dbl[0]===f.id,going=pendT[f.id]>0,done=doneT[f.id];
+    const sub=going?'送信中':done?done.no+'番':first?'1つ目':dbl?'':'¥'+f.price;
+    return '<button class="tile'+(going||done?' hit':first?' sel':'')+'" style="--c:var('+f.c+')" data-act="pick" data-id="'+f.id+'"><span class="name">'+f.name+'</span>'+(sub?'<span class="price">'+sub+'</span>':'')+'</button>';
+  }).join('')+'<button class="tile wide'+(dbl?' on':'')+'" data-act="dbl"><span class="name">ダブル</span><span class="price">¥'+DOUBLE+'</span></button>');
 }
 function renderQueue(){
   const w=list().filter(o=>o.status==='new'||flash[o.id]).sort((a,b)=>a.no-b.no);
   const el=$('#queue');
-  if(!w.length){el.innerHTML='<div class="none">なし</div>';return}
-  el.innerHTML=w.map(o=>flash[o.id]?'<div class="o sent"><span class="no">'+esc(o.no)+'</span><span class="nm">'+esc(label(o))+'</span><span class="r"><span class="to"><b>'+esc(flash[o.id])+'</b>に伝えた ✓</span></span></div>':'<div class="o"><span class="no">'+esc(o.no)+'</span>'
+  if(!w.length){put(el,'<div class="none">なし</div>');return}
+  put(el,w.map(o=>flash[o.id]?'<div class="o sent"><span class="no">'+esc(o.no)+'</span><span class="nm">'+esc(label(o))+'</span><span class="r"><span class="to"><b>'+esc(flash[o.id])+'</b>に伝えた ✓</span></span></div>':'<div class="o"><span class="no">'+esc(o.no)+'</span>'
     +'<span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+hm(o.createdAt)+'</small></span>'
     +'<span class="r">'+['A','B','C'].map(m=>'<button class="mk" data-act="told" data-m="'+m+'" data-id="'+esc(o.id)+'" aria-label="製造'+m+'に伝えた">'+m+'</button>').join('')
     +(armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">取消</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(o.no)+'番を取り消す">×</button>')
-    +'</span></div>').join('');
+    +'</span></div>').join(''));
 }
 function renderDone(){
   const d=list().filter(o=>o.status==='told').sort((a,b)=>(b.toldAt||0)-(a.toldAt||0));
   $('#doneSum').textContent='伝達済み '+d.length;
-  $('#done').innerHTML=d.length?d.slice(0,50).map(o=>'<div class="o"><span class="no">'+esc(o.no)+'</span><span class="nm">'+esc(label(o))+'</span><span class="r"><span class="who">'+esc(o.maker||'?')+'</span><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button></span></div>').join(''):'<div class="none">なし</div>';
+  put($('#done'),d.length?d.slice(0,50).map(o=>'<div class="o"><span class="no">'+esc(o.no)+'</span><span class="nm">'+esc(label(o))+'</span><span class="r"><span class="who">'+esc(o.maker||'?')+'</span><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button></span></div>').join(''):'<div class="none">なし</div>');
 }
 function renderSales(){
   const by={},mk={A:0,B:0,C:0};let tq=0,tt=0;
@@ -255,18 +256,32 @@ function renderMode(){
 }
 function render(){renderTiles();renderQueue();renderDone();renderSales();renderMode()}
 
-async function take(kind,flavors){
-  if(busy)return;
+// 押した味をすぐ塗りつぶし、保存は裏で順番に行う。続けて押した分は待たせずに受け付ける。
+function take(kind,flavors){
+  const ids=flavors.filter((f,i)=>flavors.indexOf(f)===i);
   const o={no:0,kind,flavors,total:kind==='double'?DOUBLE:F[flavors[0]].price,status:'new',createdAt:Date.now(),cid:Date.now().toString(36)+Math.random().toString(36).slice(2,8)};
-  busy=true;dbl=null;renderTiles();
-  try{await addOrder(o);toast(o.no+'番　'+label(o))}catch(e){fail()}
-  busy=false;render();
+  ids.forEach(i=>{pendT[i]=(pendT[i]||0)+1;delete doneT[i]});
+  dbl=null;renderTiles();
+  if(navigator.vibrate)navigator.vibrate(20);
+  chain=chain.then(async()=>{
+    let ok=true;try{await addOrder(o)}catch(e){ok=false}
+    ids.forEach(i=>{
+      pendT[i]--;
+      if(ok){const k=++seq;doneT[i]={no:o.no,k};setTimeout(()=>{if(doneT[i]&&doneT[i].k===k){delete doneT[i];renderTiles()}},1200)}
+    });
+    if(ok)toast(o.no+'番　'+label(o));else fail();
+    render();
+  });
 }
 
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b||b.disabled)return;
   const a=b.dataset.act,id=b.dataset.id;
-  if(a==='pick'){if(dbl){dbl.push(id);if(dbl.length===2)take('double',dbl.slice());else renderTiles()}else take('single',[id])}
+  if(a==='pick'){
+    // 同じボタンの二重タップ（0.25秒以内）は1回として扱う。
+    const now=Date.now();if(lastTap.id===id&&now-lastTap.t<250)return;lastTap={id,t:now};
+    if(dbl){dbl.push(id);if(dbl.length===2)take('double',dbl.slice());else renderTiles()}else take('single',[id])
+  }
   else if(a==='dbl'){dbl=dbl?null:[];renderTiles()}
   else if(a==='dblOff'){dbl=null;renderTiles()}
   else if(a==='told'){
@@ -277,9 +292,9 @@ document.addEventListener('click',e=>{
     toast((o?o.no+'番　':'')+m+' に伝えた');
     patchOrder(id,{status:'told',maker:m,toldAt:Date.now()});
   }
-  else if(a==='undo')patchOrder(id,{status:'new'});
+  else if(a==='undo'){const o=list().find(x=>x.id===id);patchOrder(id,{status:'new'});toast((o?o.no+'番を':'')+'未伝達に戻した')}
   else if(a==='cancel'){armCancel=id;renderQueue();setTimeout(()=>{if(armCancel===id){armCancel=null;renderQueue()}},3000)}
-  else if(a==='cancel2'){armCancel=null;patchOrder(id,{status:'cancel'})}
+  else if(a==='cancel2'){const o=list().find(x=>x.id===id);armCancel=null;patchOrder(id,{status:'cancel'});toast((o?o.no+'番を':'')+'取り消した')}
 });
 
 function wake(){
@@ -288,6 +303,11 @@ function wake(){
   if(!es||es.readyState===2||Date.now()-lastBeat>45000)connect();
   flush();
 }
+// iOSは touchstart を聞いていないと :active（押した瞬間の塗りつぶし）が効かない。
+document.addEventListener('touchstart',()=>{},{passive:true});
+// 開いている間は画面を消灯させない。
+function awake(){try{if(navigator.wakeLock&&!document.hidden)navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}}
+document.addEventListener('visibilitychange',awake);awake();
 loadLocal();render();
 if(BASE){
   connect();

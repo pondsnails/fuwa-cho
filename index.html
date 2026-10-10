@@ -32,7 +32,10 @@ h1 span{margin-left:8px;font-size:12px;font-weight:400;letter-spacing:0;color:va
 .helpbtn{margin:0 -8px 0 6px;padding:0 8px;height:40px;font-size:13px;color:var(--blue)}
 .helpbtn:active{background:#d9eff9}
 .helpbtn.on{font-weight:700}
-.alert{flex:none;padding:9px 14px;background:var(--danger);color:#fff;font-size:13px;font-weight:700;text-align:center}
+/* 赤い帯は見出しの上に重ねて出す。出たり消えたりしても、下の画面は1pxも動かさない。 */
+.app{position:relative}
+.alert{position:absolute;top:0;left:0;right:0;z-index:4;display:flex;align-items:center;justify-content:center;min-height:calc(40px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 14px 0;background:var(--danger);color:#fff;font-size:13px;font-weight:700;text-align:center}
+.alert[hidden]{display:none}
 
 .seg{flex:none;display:flex;margin:0 12px 10px;border:1px solid var(--blue);border-radius:4px;overflow:hidden}
 .seg button{flex:1 1 auto;padding:0 4px;height:36px;font-size:12px;color:var(--blue);white-space:nowrap}
@@ -160,7 +163,7 @@ tfoot td{font-weight:700;font-size:18px}
   .app{display:grid;grid-template-columns:minmax(360px,5fr) 6fr;grid-template-rows:auto auto auto auto minmax(0,1fr);max-width:1180px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
   .app>header{grid-column:1 / -1;grid-row:1;position:relative;height:48px;border-bottom:1px solid var(--line)}
   .app>header h1{position:absolute;left:0;right:0;font-size:16px;text-align:center;pointer-events:none}
-  .app>.alert{grid-column:1 / -1;grid-row:2}
+  .app>.alert{min-height:48px;font-size:15px}
   .seg{grid-column:1;grid-row:3;margin:0;border:0;border-bottom:1px solid var(--line);border-radius:0}
   .seg button{height:48px;font-size:14px;color:var(--muted);border-bottom:3px solid transparent}
   .seg button+button{border-left:0}
@@ -176,7 +179,8 @@ tfoot td{font-weight:700;font-size:18px}
   .tile.hit .price{font-size:17px}
   .tile.wide{height:64px}
   .tile.on .price{font-size:15px}
-  .toast{position:static;margin:12px 0 0;padding:14px 16px;font-size:18px}
+  .toast{top:auto;bottom:16px;left:16px;right:16px;margin:0;padding:14px 16px;font-size:22px}
+  .toast:not([hidden]){display:flex;align-items:center;justify-content:center;min-height:126px}
   .last{display:block;margin-top:auto;padding:14px 18px 12px;border-radius:3px;background:#16191c;color:#fff}
   .last small{display:block;font-size:12px;opacity:.65}
   .last .l1{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 14px;min-height:62px}

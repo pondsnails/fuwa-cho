@@ -89,6 +89,14 @@ tfoot td{font-weight:700;font-size:18px}
 .pin .o{border-bottom:2px solid #c9b24a}
 .pin .o.old{border-bottom-color:#d98f80}
 .pin+main{border-top:0}
+.tag{display:inline-block;margin-right:6px;padding:0 6px;border-radius:2px;background:var(--ink);color:#fff;font-size:11px;font-weight:700;line-height:1.6}
+/* 伝達済み・集計・使い方を開いているときは、未伝達の1件を見出しつきの別枠にして、下の内容と切り離す。 */
+.pin.apart{border-bottom:10px solid var(--bg)}
+.pin.apart .o,.pin.apart .o.old{border-bottom:1px solid var(--line)}
+.pin.apart+main{border-top:1px solid var(--line)}
+.pinhead{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:36px;padding:6px 14px;background:#f5c400;color:#2b2500;font-size:13px;font-weight:700;text-align:left}
+.pinhead:active{background:#d9ad00}
+.pinhead span{font-weight:400;text-decoration:underline}
 .steps{margin:0;padding:0;list-style:none;background:var(--panel)}
 .steps li{display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;padding:12px 14px;border-bottom:1px solid var(--line);font-size:15px;-webkit-user-select:text;user-select:text}
 .steps li>b{font-size:22px;line-height:1.2}
@@ -265,7 +273,7 @@ function row(o,now,oldest){
   if(flash[o.id])return '<div class="o sent'+(flash[o.id].out?' out':'')+'"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>✓ '+esc(flash[o.id].m)+' に伝えた</small></span><span class="r">'+['A','B','C'].map(m=>'<span class="mk'+(m===flash[o.id].m?' got':'')+'">'+m+'</span>').join('')+'<span class="x"></span></span></div>';
   const late=now-o.createdAt>LATE,when=late?Math.floor((now-o.createdAt)/60000)+'分前':hm(o.createdAt);
   return '<div class="o wait'+(late?' old':'')+'"><span class="no">'+esc(o.no)+'</span>'
-    +'<span class="nm">'+dots(o)+esc(fl(o))+'<small'+(late?' class="late"':'')+'>'+(o.kind==='double'?'ダブル　':'')+when+(oldest?'　いちばん古い':'')+'</small></span>'
+    +'<span class="nm">'+dots(o)+esc(fl(o))+'<small'+(late?' class="late"':'')+'>'+(o.kind==='double'?'ダブル　':'')+(oldest?'<span class="tag">次に伝える</span>':'')+when+'</small></span>'
     +'<span class="r">'+['A','B','C'].map(m=>'<button class="mk" data-act="told" data-m="'+m+'" data-id="'+esc(o.id)+'" aria-label="製造'+m+'に伝えた">'+m+'</button>').join('')
     +(armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">もう1回</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(o.no)+'番を取り消す">取消</button>')
     +'</span></div>';
@@ -274,7 +282,10 @@ function renderQueue(){
   const w=list().filter(o=>o.status==='new'||flash[o.id]).sort((a,b)=>a.no-b.no),now=Date.now();
   const how='<div class="how"><b>2</b>製造に伝えたら、伝えた相手 A・B・C を押す</div>';
   // いちばん古い1件は上に固定し、残りを一覧に並べる。
-  put($('#pin'),how+(w.length?row(w[0],now,w.length>1):''));
+  const here=tab==='queue',n=w.filter(o=>!flash[o.id]).length;
+  $('#pin').classList.toggle('apart',!here&&w.length>0);
+  put($('#pin'),here?how+(w.length?row(w[0],now,w.length>1):'')
+    :w.length?'<button class="pinhead" data-act="tab" data-id="queue">未伝達が '+n+'件　次に伝えるのはこれ<span>一覧を見る</span></button>'+row(w[0],now,false):'');
   put($('#queue'),w.length>1?w.slice(1).map(o=>row(o,now,false)).join('')
     :'<div class="none">'+(BASE&&!loaded?'読み込み中':w.length?'未伝達はこの1件だけです':'<strong>未伝達の注文はありません</strong>下の味を押すと、番号がついてここに並びます')+'</div>');
 }
@@ -294,7 +305,7 @@ function renderSales(){
 const HELP='<ol class="steps">'
   +'<li><b>1</b><span>注文を受けたら、下の<strong>味</strong>を押す<small>1回押すと1個。番号がついて「未伝達」に並びます。2個なら2回押す</small></span></li>'
   +'<li><b>2</b><span>ダブルは<strong>ダブル</strong>を押してから、味を2つ押す<small>同じ味を2回でもOK。やめるときはもう一度ダブルを押す</small></span></li>'
-  +'<li><b>3</b><span>製造の人に伝えたら、伝えた相手 <i>A</i> <i>B</i> <i>C</i> を押す<small>黄色い行がまだ伝えていない注文。いちばん古い注文は、いつも一番上に出ています。押すと「伝達済み」へ移ります</small></span></li>'
+  +'<li><b>3</b><span>製造の人に伝えたら、伝えた相手 <i>A</i> <i>B</i> <i>C</i> を押す<small>黄色い行がまだ伝えていない注文。次に伝える注文（いちばん古いもの）は、いつも一番上に出ています。押すと「伝達済み」へ移ります</small></span></li>'
   +'<li><b>4</b><span>まちがえたとき<small>注文の入れまちがい：「取消」を2回押す<br>相手の押しまちがい：上の「伝達済み」を開いて「戻す」</small></span></li>'
   +'<li><b>5</b><span>赤い帯が出たら電波が切れています<small>伝えた相手の記録は、電波が戻ると自動で送られます。注文は入らないので、帯が消えてからもう一度押す</small></span></li>'
   +'<li><b>6</b><span>全員が同じ画面を見ています<small>誰のスマホで押しても、すぐ全員に反映されます。番号は日ごとに1番から</small></span></li>'

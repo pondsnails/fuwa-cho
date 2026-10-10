@@ -305,8 +305,9 @@ function renderDone(){
   const all=list(),d=all.filter(o=>o.status==='told').sort((a,b)=>(b.toldAt||0)-(a.toldAt||0));
   // 取り消した注文も下に残す。番号が飛んで見える理由が分かり、まちがって消したときに戻せる。
   const c=all.filter(o=>o.status==='cancel').sort((a,b)=>(b.cancelAt||0)-(a.cancelAt||0));
-  put($('#done'),(d.length?'<div class="cap">A・B・C を押しまちがえたら「戻す」</div>'+d.slice(0,300).map(o=>'<div class="o"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+hm(o.toldAt)+'</small></span><span class="r"><span class="who">'+esc(o.maker||'?')+'</span><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button></span></div>').join(''):'<div class="none">まだありません</div>')
-    +(c.length?'<div class="cap">取り消した注文　まちがって消したら「戻す」</div>'+c.slice(0,100).map(o=>'<div class="o gone"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+(o.cancelAt?hm(o.cancelAt)+' に取消':'取消')+'</small></span><span class="r"><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button></span></div>').join(''):''));
+  // 取り消し欄は上に置く。伝えた注文が何百件になっても、下に埋もれないように。
+  put($('#done'),(c.length?'<div class="cap">取り消した注文　まちがって消したら「戻す」</div>'+c.slice(0,100).map(o=>'<div class="o gone"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+(o.cancelAt?hm(o.cancelAt)+' に取消':'取消')+'</small></span><span class="r"><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button></span></div>').join(''):'')
+    +(d.length?'<div class="cap">A・B・C を押しまちがえたら「戻す」</div>'+d.slice(0,300).map(o=>'<div class="o"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+hm(o.toldAt)+'</small></span><span class="r"><span class="who">'+esc(o.maker||'?')+'</span><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button></span></div>').join(''):'<div class="none">まだありません</div>'));
   return d.length;
 }
 function renderSales(){
@@ -323,7 +324,7 @@ const HELP='<ol class="steps">'
   +'<li><b>3</b><span>押すと番号がついて、黄色い行で出る。黄色い行は「まだ誰にも伝えていない注文」。</span></li>'
   +'<li><b>4</b><span>作る人に注文を伝えたら、その人のボタン（<i>A</i> <i>B</i> <i>C</i>）を押す。黄色い行が消える。</span></li>'
   +'<li><b>5</b><span>A・B・C は、部室棟側に立っている人から順に A、B、C。2人なら A と B、1人なら A。</span></li>'
-  +'<li><b>6</b><span>味をまちがえたら、その行の「取消」を2回押す。まちがって消したら、「伝えた」の下の「戻す」で戻せる。</span></li>'
+  +'<li><b>6</b><span>味をまちがえたら、その行の「取消」を2回押す。まちがって消したら、「伝えた」のいちばん上の「戻す」で戻せる。</span></li>'
   +'<li><b>7</b><span>A・B・C をまちがえたら、「伝えた」を開いて「戻す」を押す。</span></li>'
   +'<li><b>8</b><span>上に赤い帯が出たら電波切れ。帯が消えるまで味は押さない。</span></li>'
   +'</ol><button class="back" data-act="tab" data-id="queue">注文の画面にもどる</button>';

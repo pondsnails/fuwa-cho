@@ -34,9 +34,16 @@ h1 span{margin-left:8px;font-size:12px;font-weight:400;letter-spacing:0;color:va
 .seg button:active{background:#d9eff9}
 .seg button.on{background:var(--blue);color:#fff}
 .seg b{margin-left:5px;font-variant-numeric:tabular-nums}
+.seg b.hot{display:inline-block;min-width:22px;padding:1px 6px;border-radius:11px;background:var(--danger);color:#fff}
+/* 未伝達が画面に見えていないとき、注文ボタンのすぐ上に必ず出す帯。 */
+.more{flex:none;display:block;width:100%;min-height:44px;padding:8px 14px;background:#f5c400;color:#2b2500;font-size:15px;font-weight:700;text-align:center}
+.more:active{background:#d9ad00}
 
 main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--bg);border-top:1px solid var(--line)}
 .o{max-height:120px;display:grid;grid-template-columns:2em minmax(0,1fr) auto;gap:6px;align-items:center;min-height:60px;padding:8px 8px 8px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+/* 未伝達の行は黄色く塗って、白い「済み」の行とひと目で区別する。5分以上待たせた行は赤み。 */
+.o.wait{background:#fff3b8;border-bottom-color:#ead98a}
+.o.wait.old{background:#ffd9d0;border-bottom-color:#eeb4a8}
 .o .no{font-weight:700;font-size:22px;font-variant-numeric:tabular-nums}
 .o .nm{font-weight:600;font-size:15px;overflow-wrap:anywhere}
 .o .nm small{display:block;font-weight:400;font-size:11px;color:var(--muted)}
@@ -101,6 +108,7 @@ tfoot td{font-weight:700;font-size:18px}
     <div id="done" hidden></div>
     <div id="sales" hidden></div>
   </main>
+  <button class="more" id="more" data-act="more" hidden></button>
   <div class="pad">
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
     <div class="tiles" id="tiles"></div>
@@ -137,7 +145,7 @@ const LATE=5*60000; // これより長く未伝達の注文は、時刻を赤い
 
 // server: 保存済みの注文（id→注文）。pend: まだ送れていない変更（id→差分）。
 let server={}, pend={}, online=false, loaded=false, es=null, lastBeat=0, t0=Date.now();
-let tab='queue', flash={}, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
+let tab='queue', tabAt=0, stuck=false, pendAt=0, flash={}, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
 
 function loadLocal(){try{const x=JSON.parse(localStorage.getItem(LS)||'null');if(x){if(!BASE)server=x.server||{};pend=x.pend||{}}}catch(e){}}
 function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(BASE?{pend}:{server,pend:{}}))}catch(e){}}
@@ -173,7 +181,7 @@ async function addOrder(o){
   else{o.no=nextNo();server['n'+o.no]=o;saveLocal()}
 }
 function patchOrder(id,patch){
-  if(BASE){pend[id]=Object.assign({},pend[id],patch);saveLocal();render();flush()}
+  if(BASE){pend[id]=Object.assign({},pend[id],patch);if(!pendAt){pendAt=Date.now();setTimeout(renderMode,2600)}saveLocal();render();flush()}
   else{if(server[id])Object.assign(server[id],patch);saveLocal();render()}
 }
 // 送れていない変更を順に再送する。失敗したら残しておき、次の機会にもう一度。
@@ -190,9 +198,10 @@ async function flush(){
         if(!r.ok)throw new Error('http '+r.status);
         if(server[id])Object.assign(server[id],JSON.parse(snap));
         if(JSON.stringify(pend[id])===snap)delete pend[id];else again=true;
-      }catch(e){again=false;break}
+      }catch(e){stuck=true;again=false;break}
     }
   }while(again);
+  if(!Object.keys(pend).length){stuck=false;pendAt=0}
   saveLocal();flushing=false;render();
 }
 
@@ -237,7 +246,7 @@ function renderQueue(){
   const w=list().filter(o=>o.status==='new'||flash[o.id]).sort((a,b)=>a.no-b.no);
   const el=$('#queue'),now=Date.now();
   if(!w.length){put(el,'<div class="none">'+(BASE&&!loaded?'読み込み中':'未伝達の注文はありません')+'</div>');return}
-  put(el,w.map(o=>flash[o.id]?'<div class="o sent'+(flash[o.id].out?' out':'')+'"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>✓ '+esc(flash[o.id].m)+' に伝えた</small></span><span class="r">'+['A','B','C'].map(m=>'<span class="mk'+(m===flash[o.id].m?' got':'')+'">'+m+'</span>').join('')+'<span class="x"></span></span></div>':'<div class="o"><span class="no">'+esc(o.no)+'</span>'
+  put(el,w.map(o=>flash[o.id]?'<div class="o sent'+(flash[o.id].out?' out':'')+'"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>✓ '+esc(flash[o.id].m)+' に伝えた</small></span><span class="r">'+['A','B','C'].map(m=>'<span class="mk'+(m===flash[o.id].m?' got':'')+'">'+m+'</span>').join('')+'<span class="x"></span></span></div>':'<div class="o wait'+(now-o.createdAt>LATE?' old':'')+'"><span class="no">'+esc(o.no)+'</span>'
     +'<span class="nm">'+dots(o)+esc(fl(o))+(now-o.createdAt>LATE?'<small class="late">'+(o.kind==='double'?'ダブル　':'')+Math.floor((now-o.createdAt)/60000)+'分前</small>':'<small>'+(o.kind==='double'?'ダブル　':'')+hm(o.createdAt)+'</small>')+'</span>'
     +'<span class="r">'+['A','B','C'].map(m=>'<button class="mk" data-act="told" data-m="'+m+'" data-id="'+esc(o.id)+'" aria-label="製造'+m+'に伝えた">'+m+'</button>').join('')
     +(armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">取消</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(o.no)+'番を取り消す">×</button>')
@@ -258,7 +267,7 @@ function renderSales(){
 }
 function renderTabs(nDone,total){
   const nNew=list().filter(o=>o.status==='new').length;
-  put($('#seg'),[['queue','未伝達',nNew],['done','伝達済み',nDone],['sales','集計',yen(total)]].map(t=>'<button data-act="tab" data-id="'+t[0]+'"'+(tab===t[0]?' class="on" aria-current="true"':'')+'>'+t[1]+'<b>'+t[2]+'</b></button>').join(''));
+  put($('#seg'),[['queue','未伝達',nNew],['done','伝達済み',nDone],['sales','集計',yen(total)]].map(t=>'<button data-act="tab" data-id="'+t[0]+'"'+(tab===t[0]?' class="on" aria-current="true"':'')+'>'+t[1]+'<b'+(t[0]==='queue'&&nNew?' class="hot"':'')+'>'+t[2]+'</b></button>').join(''));
   ['queue','done','sales'].forEach(k=>{$('#'+k).hidden=tab!==k});
 }
 // つながっている間は右上に小さく、問題があるときだけ赤い帯で知らせる。
@@ -266,14 +275,29 @@ function renderMode(){
   const n=Object.keys(pend).length;
   let t='',bad='';
   if(!BASE)t='この端末のみ保存';
-  else if(n)bad='未送信 '+n+'件　電波が戻ると自動で送ります';
+  // 送信は普通0.3秒ほどで終わる。失敗したか、2.5秒たっても終わらないときだけ出す。
+  else if(n&&(stuck||Date.now()-pendAt>2500))bad='未送信 '+n+'件　電波が戻ると自動で送ります';
   else if(!loaded&&Date.now()-t0<8000)t='読み込み中';
+  else if(n&&online)t='共有中';
   else if(!loaded||!online)bad='つながらない　再接続中';
   else t='共有中';
   $('#mode').textContent=t;
   const al=$('#alert');al.textContent=bad;al.hidden=!bad;
 }
-function render(){renderTiles();renderQueue();renderTabs(renderDone(),renderSales());renderMode()}
+function render(){renderTiles();renderQueue();renderTabs(renderDone(),renderSales());renderMode();renderMore()}
+// 未伝達が見えていないとき（別のタブにいる／一覧の下に隠れている）は、注文ボタンの上の帯で知らせる。
+function renderMore(){
+  const el=$('#more'),w=list().filter(o=>o.status==='new').sort((a,b)=>a.no-b.no);
+  let t='';
+  if(w.length&&tab!=='queue')t='未伝達 '+w.length+'件（'+w.slice(0,4).map(o=>o.no).join('・')+(w.length>4?'…':'')+'番）を見る';
+  else if(w.length){
+    const bottom=$('#pane').getBoundingClientRect().bottom-24;
+    const n=[...document.querySelectorAll('#queue .o.wait')].filter(r=>r.getBoundingClientRect().top>bottom).length;
+    if(n)t='↓ 下にあと '+n+'件';
+  }
+  if(el.textContent!==t)el.textContent=t;
+  el.hidden=!t;
+}
 function toBottom(){const m=$('#pane');m.scrollTop=m.scrollHeight}
 
 // 押した味をすぐ塗りつぶし、保存は裏で順番に行う。続けて押した分は待たせずに受け付ける。
@@ -303,7 +327,8 @@ document.addEventListener('click',e=>{
     if(dbl){dbl.push(id);if(dbl.length===2)take('double',dbl.slice());else renderTiles()}else take('single',[id])
   }
   else if(a==='dbl'){dbl=dbl?null:[];renderTiles()}
-  else if(a==='tab'){tab=id;render();$('#pane').scrollTop=0}
+  else if(a==='tab'){tab=id;tabAt=Date.now();render();$('#pane').scrollTop=0}
+  else if(a==='more'){if(tab!=='queue'){tab='queue';render();$('#pane').scrollTop=0}else toBottom();renderMore()}
   else if(a==='told'){
     // 押した行をしばらく青く残して、誰に伝えたかを見せてから伝達済みへ送る。
     const m=b.dataset.m,o=list().find(x=>x.id===id);
@@ -331,7 +356,12 @@ document.addEventListener('touchstart',()=>{},{passive:true});
 function awake(){try{if(navigator.wakeLock&&!document.hidden)navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}}
 document.addEventListener('visibilitychange',awake);awake();
 $('#day').textContent=DAYLABEL;
-loadLocal();render();
+loadLocal();if(Object.keys(pend).length){stuck=true;pendAt=Date.now()}render();
+// 一覧を動かしたら帯の件数を数え直す。
+$('#pane').addEventListener('scroll',()=>{tabAt=Date.now();renderMore()},{passive:true});
+window.addEventListener('resize',renderMore);
+// 伝達済み・集計を開いたまま15秒さわらなければ、未伝達があるときは未伝達に戻す。
+setInterval(()=>{if(tab!=='queue'&&Date.now()-tabAt>15000&&list().some(o=>o.status==='new')){tab='queue';render();$('#pane').scrollTop=0}},3000);
 if(BASE){
   connect();
   // Firebaseは30秒ごとに keep-alive を送る。途絶えたらつなぎ直す。

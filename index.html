@@ -114,11 +114,12 @@ tfoot td{font-weight:700;font-size:18px}
 .steps li>b{font-size:22px;line-height:1.2}
 .steps small{display:block;margin-top:2px;font-size:13px;font-weight:400;color:var(--muted)}
 .steps i{display:inline-block;padding:0 6px;border-radius:3px;background:var(--blue);color:#fff;font-style:normal;font-weight:700}
-.sheet{position:fixed;top:0;bottom:0;left:0;right:0;z-index:5;display:flex;flex-direction:column;max-width:520px;margin:0 auto;background:var(--bg)}
+.sheet{position:fixed;top:0;bottom:0;left:0;right:0;z-index:5;display:flex;align-items:center;justify-content:center;padding:calc(20px + env(safe-area-inset-top,0px)) 16px calc(20px + env(safe-area-inset-bottom,0px));background:rgba(22,25,28,.6)}
+.sheet .box{display:flex;flex-direction:column;width:100%;max-width:440px;max-height:100%;background:var(--bg);border-radius:4px;overflow:hidden}
 .sheet[hidden]{display:none}
-.sheet header{background:var(--panel);border-bottom:1px solid var(--line)}
+.sheet header{padding-top:0;background:var(--panel);border-bottom:1px solid var(--line)}
 .sheet .body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
-.sheet .foot{flex:none;padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px));background:var(--strip);border-top:1px solid var(--line)}
+.sheet .foot{flex:none;padding:10px;background:var(--strip);border-top:1px solid var(--line)}
 .back{display:block;width:100%;height:48px;margin:0;border-radius:3px;background:var(--blue);color:#fff;font-weight:700}
 .back:active{background:#0c5f82}
 .cap{padding:7px 14px;font-size:12px;color:var(--muted);background:var(--strip);border-bottom:1px solid var(--line)}
@@ -159,11 +160,13 @@ tfoot td{font-weight:700;font-size:18px}
   </div>
 </div>
 
-<!-- 使い方は、注文の画面の上に重ねて開く。見出しの帯と「とじる」は注文の画面と同じ部品。 -->
+<!-- 使い方は、まわりを暗くして真ん中に出す。暗い所を押しても閉じる。見出しの帯と「とじる」は注文の画面と同じ部品。 -->
 <div class="sheet" id="help" role="dialog" aria-label="使い方" hidden>
-  <header><h1>使い方</h1><button class="helpbtn" data-act="helpOff">とじる</button></header>
-  <div class="body" id="helpbody"></div>
-  <div class="foot"><button class="back" data-act="helpOff">とじる</button></div>
+  <div class="box">
+    <header><h1>使い方</h1><button class="helpbtn" data-act="helpOff">とじる</button></header>
+    <div class="body" id="helpbody"></div>
+    <div class="foot"><button class="back" data-act="helpOff">とじる</button></div>
+  </div>
 </div>
 
 <script>
@@ -397,6 +400,7 @@ function take(kind,flavors){
 }
 
 document.addEventListener('click',e=>{
+  if(e.target.id==='help'){e.target.hidden=true;return}
   const b=e.target.closest('[data-act]');if(!b||b.disabled)return;
   const a=b.dataset.act,id=b.dataset.id;
   if(a==='pick'){

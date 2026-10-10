@@ -137,6 +137,7 @@ tfoot td{font-weight:700;font-size:18px}
 .cap{padding:7px 14px;font-size:12px;color:var(--muted);background:var(--strip);border-bottom:1px solid var(--line)}
 
 .pad{flex:none;position:relative;padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px));background:var(--strip);border-top:1px solid var(--line)}
+.last{display:none}
 .tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;height:66px;padding:0 2px;background:var(--panel);border:1px solid var(--c);border-bottom-width:4px;border-radius:3px}
 .tile .name{font-size:15px;font-weight:600;white-space:nowrap}
@@ -152,31 +153,47 @@ tfoot td{font-weight:700;font-size:18px}
 /* 番号の表示は、レジの客面ディスプレイと同じ黒地に白。注文ボタンのすぐ上に出す。 */
 .toast{position:absolute;left:10px;right:10px;bottom:100%;margin-bottom:8px;padding:12px 16px;border-radius:3px;background:#16191c;color:#fff;font-weight:700;font-size:18px;text-align:center;pointer-events:none}
 
-/* タブレット・PC（横に広い画面）：左に一覧、右に味のボタン。お手本のAirレジと同じ左右2分割。スマホの見た目は変えない。 */
+/* タブレット・PC（横に広い画面）。お手本のAirレジのiPad画面にならう：
+   白い左の列に一覧（下線つきのタブ）、灰色の右の列に味のタイル、見出しは中央。
+   右下には客面ディスプレイ風の黒い表示で、直前の注文と今日の合計を出したままにする。スマホの見た目は変えない。 */
 @media (min-width:768px) and (min-height:500px){
   .app{display:grid;grid-template-columns:minmax(360px,5fr) 6fr;grid-template-rows:auto auto auto auto minmax(0,1fr);max-width:1180px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
-  .app>header{grid-column:1 / -1;grid-row:1;border-bottom:1px solid var(--line)}
+  .app>header{grid-column:1 / -1;grid-row:1;position:relative;height:48px;border-bottom:1px solid var(--line)}
+  .app>header h1{position:absolute;left:0;right:0;font-size:16px;text-align:center;pointer-events:none}
   .app>.alert{grid-column:1 / -1;grid-row:2}
-  .seg{grid-column:1;grid-row:3;margin-top:12px}
-  .pin{grid-column:1;grid-row:4}
+  .seg{grid-column:1;grid-row:3;margin:0;border:0;border-bottom:1px solid var(--line);border-radius:0}
+  .seg button{height:48px;font-size:14px;color:var(--muted);border-bottom:3px solid transparent}
+  .seg button+button{border-left:0}
+  .seg button.on{background:none;color:var(--blue);font-weight:700;border-bottom-color:var(--blue)}
+  .pin{grid-column:1;grid-row:4;border-top:0}
   main{grid-column:1;grid-row:5}
-  .pad{grid-column:2;grid-row:3 / span 3;padding:16px;border-top:0;border-left:1px solid var(--line)}
+  .pad{grid-column:2;grid-row:3 / span 3;display:flex;flex-direction:column;padding:16px;background:var(--bg);border-top:0;border-left:1px solid var(--line)}
   .pad .how{margin:0 0 12px;padding:0;font-size:14px}
-  .tiles{gap:12px}
-  .tile{height:clamp(88px,17vh,150px);border-bottom-width:5px}
-  .tile .name{font-size:21px}
-  .tile .price{font-size:15px}
+  .tiles{gap:10px}
+  .tile{height:clamp(84px,14vh,118px);border-bottom-width:5px}
+  .tile .name{font-size:20px}
+  .tile .price{font-size:14px}
   .tile.hit .price{font-size:17px}
-  .tile.wide{height:clamp(64px,11vh,96px)}
+  .tile.wide{height:64px}
   .tile.on .price{font-size:15px}
-  .toast{top:auto;bottom:16px;left:16px;right:16px;margin:0;padding:16px;font-size:22px}
+  .toast{position:static;margin:12px 0 0;padding:14px 16px;font-size:18px}
+  .last{display:block;margin-top:auto;padding:14px 18px 12px;border-radius:3px;background:#16191c;color:#fff}
+  .last small{display:block;font-size:12px;opacity:.65}
+  .last .l1{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 14px;min-height:62px}
+  .last .l1 small{flex:0 0 100%}
+  .last .l1 b{font-size:40px;line-height:1.15;font-variant-numeric:tabular-nums}
+  .last .l1 span{font-size:21px;font-weight:600}
+  .last .l1 .ph{font-size:15px;font-weight:400;opacity:.65}
+  .last .l2{margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.22);font-size:14px;text-align:right}
+  .last .l2 b{margin:0 2px 0 6px;font-size:20px;font-variant-numeric:tabular-nums}
 }
 /* 縦向きのタブレットなど、2分割にすると右が狭い幅では、一覧の幅を固定して味の文字を小さくする。 */
 @media (min-width:768px) and (max-width:899px) and (min-height:500px){
   .app{grid-template-columns:390px minmax(0,1fr)}
   .tile .name{font-size:16px}
   .tile .price{font-size:13px}
-  .toast{font-size:18px}
+  .last .l1 b{font-size:32px}
+  .last .l1 span{font-size:17px}
 }
 </style>
 </head>
@@ -196,6 +213,7 @@ tfoot td{font-weight:700;font-size:18px}
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
     <div class="how"><b>1</b>注文された味を押す</div>
     <div class="tiles" id="tiles"></div>
+    <div class="last" id="last"></div>
   </div>
 </div>
 
@@ -244,7 +262,7 @@ const LATE=5*60000; // これより長く未伝達の注文は、時刻を赤い
 
 // server: 保存済みの注文（id→注文）。pend: まだ送れていない変更（id→差分）。
 let server={}, pend={}, online=false, loaded=false, es=null, lastBeat=0, t0=Date.now();
-let tab='queue', tabAt=0, stuck=false, pendAt=0, flash={}, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
+let lastOrder=null, tab='queue', tabAt=0, stuck=false, pendAt=0, flash={}, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
 
 function loadLocal(){try{const x=JSON.parse(localStorage.getItem(LS)||'null');if(x){if(!BASE)server=x.server||{};pend=x.pend||{}}}catch(e){}}
 function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(BASE?{pend}:{server,pend:{}}))}catch(e){}}
@@ -407,7 +425,13 @@ function renderMode(){
   $('#mode').textContent=t;
   const al=$('#alert');al.textContent=bad;al.hidden=!bad;
 }
-function render(){renderTiles();renderQueue();renderTabs(renderDone(),renderSales());renderMode()}
+function render(){renderTiles();renderQueue();renderTabs(renderDone(),renderSales());renderMode();renderLast()}
+// 広い画面の右下に出したままにする表示：直前に入れた注文と、今日の件数・売上。
+function renderLast(){
+  let q=0,t=0;live().forEach(o=>{q++;t+=o.total});
+  put($('#last'),'<div class="l1"><small>直前の注文</small>'+(lastOrder?'<b>'+esc(lastOrder.no)+'番</b><span>'+esc(lastOrder.label)+'</span>':'<span class="ph">味を押すと、ここに番号が出ます</span>')+'</div>'
+    +'<div class="l2">注文<b>'+q+'</b>件　売上<b>'+yen(t)+'</b></div>');
+}
 function toBottom(){const m=$('#pane');m.scrollTop=m.scrollHeight}
 
 // 押した味をすぐ塗りつぶし、保存は裏で順番に行う。続けて押した分は待たせずに受け付ける。
@@ -423,7 +447,7 @@ function take(kind,flavors){
       pendT[i]--;
       if(ok){const k=++seq;doneT[i]={no:o.no,k};setTimeout(()=>{if(doneT[i]&&doneT[i].k===k){delete doneT[i];renderTiles()}},1200)}
     });
-    if(ok)toast(o.no+'番　'+label(o));else fail();
+    if(ok){lastOrder={no:o.no,label:label(o)};toast(o.no+'番　'+label(o))}else fail();
     render();if(ok&&tab==='queue')toBottom();
   });
 }
@@ -461,7 +485,7 @@ function rollover(){
   if(dayKey()===DAY)return false;
   if(es){es.close();es=null}
   DAY=dayKey();BASE=root(DAY);LS='wataame-cho-v3-'+DAY;
-  server={};pend={};flash={};pendT={};doneT={};dbl=null;armCancel=null;loaded=false;online=false;stuck=false;pendAt=0;t0=Date.now();tab='queue';
+  lastOrder=null;server={};pend={};flash={};pendT={};doneT={};dbl=null;armCancel=null;loaded=false;online=false;stuck=false;pendAt=0;t0=Date.now();tab='queue';
   loadLocal();if(BASE)connect();render();
   toast('番号をリセットしました。1番から',4000);
   return true;

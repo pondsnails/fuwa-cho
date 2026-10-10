@@ -40,6 +40,9 @@ h2,summary{margin:0;padding:7px 14px;font-size:12px;font-weight:400;color:var(--
 .tile.wide{grid-column:1 / -1;flex-direction:row;gap:10px;min-height:52px;--c:var(--blue);color:var(--blue)}
 .tile.wide .price{color:inherit;opacity:.8}
 .tile.on,.tile.on:active{background:var(--blue);color:#fff}
+.tile.sel,.tile.sel:active{background:var(--c);color:#fff}
+.tile.sel[data-id=lemon]{color:var(--ink)}
+.tile.sel .price{color:inherit;opacity:.9}
 .hint{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;font-size:14px;font-weight:700}
 
 .list{background:var(--panel);border-top:1px solid var(--line)}
@@ -208,7 +211,7 @@ const dots=o=>flv(o).map(f=>'<i class="sq" style="background:var('+(F[f]?F[f].c:
 function renderTiles(){
   const off=busy?' disabled':'';
   $('#hint').innerHTML=dbl?'<div class="hint"><span>ダブル：'+(dbl.length?esc(F[dbl[0]].name)+'＋2つ目':'1つ目')+'を選ぶ</span><button class="link" data-act="dblOff">やめる</button></div>':'';
-  $('#tiles').innerHTML=FLAVORS.map(f=>'<button class="tile" style="--c:var('+f.c+')" data-act="pick" data-id="'+f.id+'"'+off+'><span class="name">'+f.name+'</span>'+(dbl?'':'<span class="price">¥'+f.price+'</span>')+'</button>').join('')
+  $('#tiles').innerHTML=FLAVORS.map(f=>'<button class="tile'+(dbl&&dbl[0]===f.id?' sel':'')+'" style="--c:var('+f.c+')" data-act="pick" data-id="'+f.id+'"'+off+'><span class="name">'+f.name+'</span>'+(dbl?(dbl[0]===f.id?'<span class="price">1つ目</span>':''):'<span class="price">¥'+f.price+'</span>')+'</button>').join('')
     +'<button class="tile wide'+(dbl?' on':'')+'" data-act="dbl"'+off+'><span class="name">ダブル</span><span class="price">¥'+DOUBLE+'</span></button>';
 }
 function renderQueue(){

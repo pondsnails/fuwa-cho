@@ -1,7 +1,7 @@
 // Firebase Realtime Database（REST + EventSource）の代わりをするローカルサーバー。動作確認用。
 // 使い方: node tools/mock.js → http://localhost:8791/
 //   /__net?off=1 で電波断、/__net?off=0 で復帰、/__dump で保存内容
-//   RESET_IN=9000 を付けると、9:30のリセットを「ページを開いて9秒後」に置き換える
+//   RESET_IN=9000 を付けると、9:15のリセットを「ページを開いて9秒後」に置き換える
 const http=require('http'),fs=require('fs'),path=require('path');
 const PORT=8791,HTML=process.argv[2]||path.join(__dirname,'..','index.html'),RESET_IN=Number(process.env.RESET_IN)||0;
 let tree={},subs=[],off=false;
@@ -11,7 +11,7 @@ const set=(p,v)=>{const par=walk(p.slice(0,-1),true);if(v===null)delete par[p[p.
 const send=(ev,p,data)=>subs.forEach(s=>{if(p.join('/').startsWith(s.p.join('/'))){const rel='/'+p.slice(s.p.length).join('/');s.res.write('event: '+ev+'\ndata: '+JSON.stringify({path:rel,data})+'\n\n')}});
 function page(){
   let h=fs.readFileSync(HTML,'utf8').replace(/const DB_URL='[^']*';/,"const DB_URL=location.origin+'/db';");
-  if(RESET_IN)h=h.replace('new Date(2026,9,11,9,30).getTime()','(Date.now()+'+RESET_IN+')');
+  if(RESET_IN)h=h.replace('new Date(2026,9,11,9,15).getTime()','(Date.now()+'+RESET_IN+')');
   return h;
 }
 http.createServer((q,r)=>{

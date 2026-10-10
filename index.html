@@ -202,9 +202,9 @@ const FLAVORS=[
   {id:'orange',name:'オレンジ',price:300,c:'--f-orange'}
 ];
 const DOUBLE=400, F=Object.fromEntries(FLAVORS.map(f=>[f.id,f]));
-// 番号と集計は日付ごとに分ける。加えて、本番の10/11は朝9:30に一度リセットする：
-// 9:30より前に入れた分（開店前の練習）は別の箱に入り、9:30になると1番から始まる。
-const RESET=new Date(2026,9,11,9,30).getTime();
+// 番号と集計は日付ごとに分ける。加えて、本番の10/11は朝9:15に一度リセットする：
+// 9:15より前に入れた分（開店前の練習）は別の箱に入り、9:15になると1番から始まる。
+const RESET=new Date(2026,9,11,9,15).getTime();
 function dayKey(){
   if(!SPLIT_BY_DATE)return 'all';
   const d=new Date(),r=new Date(RESET),k='d'+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
@@ -429,7 +429,7 @@ document.addEventListener('click',e=>{
   else if(a==='cancel2'){const o=list().find(x=>x.id===id);armCancel=null;patchOrder(id,{status:'cancel',cancelAt:Date.now()});toast((o?o.no+'番を':'')+'取り消した')}
 });
 
-// 日付や9:30の区切りをまたいだら、開いたままの画面もその場で新しい箱に切り替える（再読み込みはしない）。
+// 日付や9:15の区切りをまたいだら、開いたままの画面もその場で新しい箱に切り替える（再読み込みはしない）。
 function rollover(){
   if(dayKey()===DAY)return false;
   if(es){es.close();es=null}

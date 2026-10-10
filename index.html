@@ -102,10 +102,17 @@ tfoot td{font-weight:700;font-size:18px}
 .pinhead{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:36px;padding:6px 14px;background:#f5c400;color:#2b2500;font-size:13px;font-weight:700;text-align:left}
 .pinhead:active{background:#d9ad00}
 .pinhead span{font-weight:400;text-decoration:underline}
+.hh{margin:0;padding:16px 14px 7px;font-size:16px;font-weight:700;color:var(--ink);background:none;border-bottom:1px solid var(--line)}
+.ht{margin:0;padding:12px 14px;background:var(--panel);border-bottom:1px solid var(--line);font-size:15px;-webkit-user-select:text;user-select:text}
+.qa{margin:0;background:var(--panel)}
+.qa div{padding:10px 14px;border-bottom:1px solid var(--line)}
+.qa dt{font-size:13px;color:var(--muted)}
+.qa dd{margin:2px 0 0;font-size:15px;font-weight:600}
+.x.eg{display:inline-flex;align-items:center;justify-content:center}
 .steps{margin:0;padding:0;list-style:none;background:var(--panel)}
-.steps li{display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;padding:12px 14px;border-bottom:1px solid var(--line);font-size:15px;-webkit-user-select:text;user-select:text}
+.steps li{display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);font-size:17px;font-weight:600;-webkit-user-select:text;user-select:text}
 .steps li>b{font-size:22px;line-height:1.2}
-.steps small{display:block;margin-top:2px;font-size:12px;color:var(--muted)}
+.steps small{display:block;margin-top:2px;font-size:13px;font-weight:400;color:var(--muted)}
 .steps i{display:inline-block;padding:0 6px;border-radius:3px;background:var(--blue);color:#fff;font-style:normal;font-weight:700}
 .back{display:block;width:calc(100% - 28px);height:48px;margin:14px;border-radius:3px;background:var(--blue);color:#fff;font-weight:700}
 .back:active{background:#0c5f82}
@@ -317,16 +324,27 @@ function renderSales(){
     +'<div class="cap">A・B・C に伝えた数</div><div class="sub"><span><b>'+mk.A+'</b>A</span><span><b>'+mk.B+'</b>B</span><span><b>'+mk.C+'</b>C</span></div>');
   return tt;
 }
-const HELP='<ol class="steps">'
-  +'<li><b>1</b><span>注文された味を押す。2個なら2回押す。</span></li>'
-  +'<li><b>2</b><span>ダブルは、先に「ダブル」、そのあと味を2つ押す。</span></li>'
-  +'<li><b>3</b><span>押すと番号がついて、黄色い行で出る。黄色い行は「まだ誰にも伝えていない注文」。</span></li>'
-  +'<li><b>4</b><span>作る人に注文を伝えたら、その人のボタン（<i>A</i> <i>B</i> <i>C</i>）を押す。黄色い行が消える。</span></li>'
-  +'<li><b>5</b><span>A・B・C は、部室棟側に立っている人から順に A、B、C。2人なら A と B、1人なら A。</span></li>'
-  +'<li><b>6</b><span>味をまちがえたら、その行の「取消」を2回押す。まちがって消したら、「取消」を開いて「戻す」を押す。</span></li>'
-  +'<li><b>7</b><span>A・B・C をまちがえたら、「伝えた」を開いて「戻す」を押す。</span></li>'
-  +'<li><b>8</b><span>上に赤い帯が出たら電波切れ。帯が消えるまで味は押さない。</span></li>'
-  +'</ol><button class="back" data-act="tab" data-id="queue">注文の画面にもどる</button>';
+// 使い方：やること3つを先に大きく。例外は「こまったとき」に分ける。黄色い行は見本をそのまま見せる。
+const HELP='<h2 class="hh">やることは3つだけ</h2>'
+  +'<ol class="steps">'
+  +'<li><b>1</b><span>注文された味を押す<small>→ 番号のついた黄色い行が出る</small></span></li>'
+  +'<li><b>2</b><span>作る人に声で伝える</span></li>'
+  +'<li><b>3</b><span>伝えた人のボタンを押す<small>→ 黄色い行が消える</small></span></li>'
+  +'</ol>'
+  +'<div class="cap">見本</div>'
+  +'<div class="o wait" aria-hidden="true"><span class="no">1</span><span class="nm"><i class="sq" style="background:var(--f-ichigo)"></i>いちご</span><span class="r"><span class="mk">A</span><span class="mk">B</span><span class="mk">C</span><span class="x eg">取消</span></span></div>'
+  +'<p class="ht">黄色い行が残っている ＝ まだ誰にも伝えていない注文</p>'
+  +'<h2 class="hh">A・B・C はだれ？</h2>'
+  +'<p class="ht">部室棟側に立っている人から順に A、B、C。<br>2人なら A と B、1人なら A。</p>'
+  +'<h2 class="hh">ダブルのとき</h2>'
+  +'<p class="ht">「ダブル」を押してから、味を2つ押す。</p>'
+  +'<h2 class="hh">こまったとき</h2>'
+  +'<dl class="qa">'
+  +'<div><dt>味をまちがえて押した</dt><dd>その行の「取消」を2回押す</dd></div>'
+  +'<div><dt>まちがえて取り消した</dt><dd>上の「取消」を開いて「戻す」</dd></div>'
+  +'<div><dt>A・B・C を押しまちがえた</dt><dd>上の「伝えた」を開いて「戻す」</dd></div>'
+  +'<div><dt>上に赤い帯が出た</dt><dd>電波がない。帯が消えるまで味は押さない</dd></div>'
+  +'</dl><button class="back" data-act="tab" data-id="queue">注文の画面にもどる</button>';
 function renderTabs(nDone,total){
   const nNew=list().filter(o=>o.status==='new').length;
   put($('#seg'),[['queue','まだ伝えてない',nNew],['done','伝えた',nDone],['gone','取消',list().filter(o=>o.status==='cancel').length],['sales','集計','']].map(t=>'<button data-act="tab" data-id="'+t[0]+'"'+(tab===t[0]?' class="on" aria-current="true"':'')+'>'+t[1]+'<b'+(t[0]==='queue'&&nNew?' class="hot"':'')+'>'+t[2]+'</b></button>').join(''));

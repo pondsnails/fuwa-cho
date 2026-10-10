@@ -163,10 +163,16 @@ const FLAVORS=[
   {id:'orange',name:'オレンジ',price:300,c:'--f-orange'}
 ];
 const DOUBLE=400, F=Object.fromEntries(FLAVORS.map(f=>[f.id,f]));
-function dayKey(){if(!SPLIT_BY_DATE)return 'all';const d=new Date();return 'd'+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')}
-const DAY=dayKey();
-const BASE=DB_URL?DB_URL.replace(/\/+$/,'')+'/wataame/'+DAY:'';
-const LS='wataame-cho-v3-'+DAY;
+// 番号と集計は日付ごとに分ける。加えて、初日（10/11）は朝9:30に一度リセットする：
+// 9:30より前に入れた分（開店前の練習）は別の箱に入り、9:30になると1番から始まる。
+const RESET=new Date(2026,9,11,9,30).getTime();
+function dayKey(){
+  if(!SPLIT_BY_DATE)return 'all';
+  const d=new Date(),r=new Date(RESET),k='d'+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  return d.getTime()<RESET&&d.toDateString()===r.toDateString()?k+'pre':k;
+}
+const root=k=>DB_URL?DB_URL.replace(/\/+$/,'')+'/wataame/'+k:'';
+let DAY=dayKey(), BASE=root(DAY), LS='wataame-cho-v3-'+DAY;
 const DAYLABEL=(new Date().getMonth()+1)+'/'+new Date().getDate();
 const LATE=5*60000; // これより長く未伝達の注文は、時刻を赤い「◯分前」にする。
 
@@ -377,9 +383,18 @@ document.addEventListener('click',e=>{
   else if(a==='cancel2'){const o=list().find(x=>x.id===id);armCancel=null;patchOrder(id,{status:'cancel'});toast((o?o.no+'番を':'')+'取り消した')}
 });
 
+// 日付や9:30の区切りをまたいだら、開いたままの画面もその場で新しい箱に切り替える（再読み込みはしない）。
+function rollover(){
+  if(dayKey()===DAY)return false;
+  if(es){es.close();es=null}
+  DAY=dayKey();BASE=root(DAY);LS='wataame-cho-v3-'+DAY;
+  server={};pend={};flash={};pendT={};doneT={};dbl=null;armCancel=null;loaded=false;online=false;stuck=false;pendAt=0;t0=Date.now();tab='queue';
+  loadLocal();if(BASE)connect();render();
+  toast('番号をリセットしました。1番から',4000);
+  return true;
+}
 function wake(){
-  if(!BASE)return;
-  if(dayKey()!==DAY){location.reload();return}
+  if(rollover()||!BASE)return;
   if(!es||es.readyState===2||Date.now()-lastBeat>45000)connect();
   flush();
 }
@@ -396,7 +411,8 @@ setInterval(()=>{if(tab!=='queue'&&tab!=='help'&&Date.now()-tabAt>15000&&list().
 if(BASE){
   connect();
   // Firebaseは30秒ごとに keep-alive を送る。途絶えたらつなぎ直す。
-  setInterval(()=>{if(Date.now()-lastBeat>75000){online=false;connect()}flush();render()},15000);
+  setInterval(()=>{if(rollover())return;if(Date.now()-lastBeat>75000){online=false;connect()}flush();render()},15000);
+  setInterval(rollover,2000);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)wake()});
   window.addEventListener('online',wake);
   window.addEventListener('pageshow',e=>{if(e.persisted)wake()});

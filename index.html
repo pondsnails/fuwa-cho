@@ -7,7 +7,8 @@
 <meta name="theme-color" content="#ffffff">
 <title>わたあめ帳</title>
 <style>
-/* レジアプリ（Airレジの注文入力画面）に寄せた見た目。白い帯＋薄い罫線、角の立ったタイルに色の下線、操作は青1色。 */
+/* レジアプリ（Airレジの注文入力画面）に寄せた見た目。白い帯＋薄い罫線、角の立ったタイルに色の下線、操作は青1色。
+   画面は上から 見出し／切り替え／一覧（ここだけスクロール）／注文ボタン。注文ボタンは親指の届く下に固定する。 */
 :root{
   color-scheme:light;
   --bg:#eff1f2; --panel:#ffffff; --strip:#f6f7f8; --ink:#333a40; --muted:#8a9198; --line:#dfe3e6;
@@ -15,41 +16,32 @@
   --f-plain:#a3abb1; --f-ichigo:#ee5a7c; --f-grape:#8a5bc2; --f-blue:#2a7fc0; --f-lemon:#e3b90f; --f-orange:#f59a38;
 }
 *{box-sizing:border-box}
-body{margin:0;overscroll-behavior-y:contain;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;font-size:16px;line-height:1.4;-webkit-text-size-adjust:100%}
-.wrap{max-width:520px;margin:0 auto;padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))}
+html,body{height:100%}
+body{margin:0;overflow:hidden;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;font-size:16px;line-height:1.4;-webkit-text-size-adjust:100%}
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:520px;margin:0 auto;background:var(--panel)}
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 
-header{position:relative;display:flex;align-items:center;justify-content:center;height:44px;padding-top:env(safe-area-inset-top,0px);box-sizing:content-box;background:var(--panel);border-bottom:1px solid var(--line)}
+header{flex:none;display:flex;align-items:center;justify-content:space-between;height:40px;padding:env(safe-area-inset-top,0px) 14px 0;box-sizing:content-box}
 h1{margin:0;font-size:15px;font-weight:700;letter-spacing:.04em}
-.mode{position:absolute;right:12px;bottom:13px;font-size:11px;color:var(--blue)}
-.mode.bad{color:var(--danger);font-weight:700}
-.stats{display:flex;background:var(--panel);border-bottom:1px solid var(--line)}
-.stats span{flex:1;padding:7px 0 8px;text-align:center;font-size:11px;color:var(--muted)}
-.stats span+span{border-left:1px solid var(--line)}
-.stats b{display:block;font-size:20px;font-weight:600;line-height:1.2;color:var(--ink);font-variant-numeric:tabular-nums}
+h1 span{margin-left:8px;font-size:12px;font-weight:400;letter-spacing:0;color:var(--muted)}
+.mode{font-size:11px;color:var(--muted)}
+.alert{flex:none;padding:9px 14px;background:var(--danger);color:#fff;font-size:13px;font-weight:700;text-align:center}
 
-h2,summary{margin:0;padding:7px 14px;font-size:12px;font-weight:400;color:var(--muted);background:var(--strip);border-bottom:1px solid var(--line)}
-.menu{padding:12px 12px 14px}
-.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:68px;padding:0 2px;background:var(--panel);border:1px solid var(--c);border-bottom-width:4px;border-radius:3px}
-.tile .name{font-size:14px;font-weight:600;white-space:nowrap}
-.tile .price{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
-.tile.wide{grid-column:1 / -1;flex-direction:row;gap:10px;min-height:52px;--c:var(--blue);color:var(--blue)}
-.tile.wide .price{color:inherit;opacity:.8}
-/* 押したボタンは、その色で塗りつぶす。押した瞬間（:active）と、押したあと（.hit / .sel / .on）で同じ見た目。 */
-.tile:active,.tile.hit,.tile.sel,.tile.on{background:var(--c);color:#fff}
-.tile[data-id=lemon]:active,.tile.hit[data-id=lemon],.tile.sel[data-id=lemon]{color:var(--ink)}
-.tile:active .price,.tile.hit .price,.tile.sel .price,.tile.on .price{color:inherit;opacity:.95}
-.tile.hit .price{font-size:14px;font-weight:700}
-.hint{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;font-size:14px;font-weight:700}
+.seg{flex:none;display:flex;margin:0 12px 10px;border:1px solid var(--blue);border-radius:4px;overflow:hidden}
+.seg button{flex:1;height:36px;font-size:13px;color:var(--blue);white-space:nowrap}
+.seg button+button{border-left:1px solid var(--blue)}
+.seg button:active{background:#d9eff9}
+.seg button.on{background:var(--blue);color:#fff}
+.seg b{margin-left:5px;font-variant-numeric:tabular-nums}
 
-.list{background:var(--panel);border-top:1px solid var(--line)}
-.o{max-height:120px;display:grid;grid-template-columns:2.2em minmax(0,1fr) auto;gap:8px;align-items:center;min-height:60px;padding:8px 10px 8px 14px;border-bottom:1px solid var(--line)}
+main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--bg);border-top:1px solid var(--line)}
+.o{max-height:120px;display:grid;grid-template-columns:2em minmax(0,1fr) auto;gap:6px;align-items:center;min-height:60px;padding:8px 8px 8px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
 .o .no{font-weight:700;font-size:22px;font-variant-numeric:tabular-nums}
 .o .nm{font-weight:600;font-size:15px;overflow-wrap:anywhere}
 .o .nm small{display:block;font-weight:400;font-size:11px;color:var(--muted)}
-.o .r{display:flex;gap:6px;align-items:center}
+.o .nm small.late{color:var(--danger);font-weight:700}
+.o .r{display:flex;gap:5px;align-items:center}
 /* 伝えた行：押したボタンの側から青が広がり、押した文字だけ白抜きでその場に残る。少し見せてから畳む。 */
 .o.sent{color:#fff;background:linear-gradient(var(--blue),var(--blue)) right/100% 100% no-repeat;animation:wipe .16s ease-out}
 .o.sent .nm small{color:inherit;font-size:13px;font-weight:700}
@@ -67,45 +59,53 @@ h2,summary{margin:0;padding:7px 14px;font-size:12px;font-weight:400;color:var(--
 .x{display:inline-block;min-width:34px;height:44px;color:var(--muted);font-size:20px}
 .x:active,.link:active{background:#d9eff9;border-radius:3px}
 .x.arm,.x.arm:active{background:var(--danger);color:#fff;border-radius:3px;font-size:14px;font-weight:700;padding:0 8px}
-.link{color:var(--blue);font-size:14px;min-height:44px;padding:0 6px}
-.who{display:inline-block;min-width:1.6em;text-align:center;font-weight:700}
-.none{padding:14px;border-bottom:1px solid var(--line);color:var(--muted);font-size:14px}
+.link{color:var(--blue);font-size:14px;min-height:44px;padding:0 8px}
+.who{display:inline-block;min-width:1.6em;text-align:center;font-weight:700;font-size:17px}
+.none{padding:28px 14px;color:var(--muted);font-size:14px;text-align:center}
 
-details{background:var(--panel)}
-summary{cursor:pointer}
-table{width:100%;border-collapse:collapse;font-size:14px}
-td,th{padding:9px 14px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+table{width:100%;border-collapse:collapse;font-size:15px;background:var(--panel)}
+td,th{padding:11px 14px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
 td:first-child,th:first-child{text-align:left}
-th{font-weight:400;font-size:12px;color:var(--muted)}
-tfoot td{font-weight:700;font-size:16px}
-.sub{font-size:14px;color:var(--muted);padding:10px 14px;border-bottom:1px solid var(--line)}
-.sub b{color:var(--ink);margin-right:10px}
-/* 番号の表示は、レジの客面ディスプレイと同じ黒地に白。 */
-.toast{position:fixed;left:16px;right:16px;top:calc(8px + env(safe-area-inset-top,0px));margin:0 auto;max-width:420px;padding:12px 16px;border-radius:3px;background:#16191c;color:#fff;font-weight:700;font-size:18px;text-align:center}
+th{padding:7px 14px;font-weight:400;font-size:12px;color:var(--muted);background:var(--strip)}
+tfoot td{font-weight:700;font-size:18px}
+.sub{display:flex;background:var(--panel);border-bottom:1px solid var(--line)}
+.sub span{flex:1;padding:9px 0;text-align:center;font-size:12px;color:var(--muted)}
+.sub span+span{border-left:1px solid var(--line)}
+.sub b{display:block;font-size:20px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.cap{padding:7px 14px;font-size:12px;color:var(--muted);background:var(--strip);border-bottom:1px solid var(--line)}
+
+.pad{flex:none;position:relative;padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px));background:var(--strip);border-top:1px solid var(--line)}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;height:66px;padding:0 2px;background:var(--panel);border:1px solid var(--c);border-bottom-width:4px;border-radius:3px}
+.tile .name{font-size:15px;font-weight:600;white-space:nowrap}
+.tile .price{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tile.wide{grid-column:1 / -1;flex-direction:row;gap:10px;height:50px;--c:var(--blue);color:var(--blue)}
+.tile.wide .price{color:inherit;opacity:.8}
+/* 押したボタンは、その色で塗りつぶす。押した瞬間（:active）と、押したあと（.hit / .sel / .on）で同じ見た目。 */
+.tile:active,.tile.hit,.tile.sel,.tile.on{background:var(--c);color:#fff}
+.tile[data-id=lemon]:active,.tile.hit[data-id=lemon],.tile.sel[data-id=lemon]{color:var(--ink)}
+.tile:active .price,.tile.hit .price,.tile.sel .price,.tile.on .price{color:inherit;opacity:.95}
+.tile.hit .price{font-size:14px;font-weight:700}
+.tile.on .price{padding:3px 10px;border:1px solid #fff;border-radius:3px;font-size:13px;opacity:1}
+/* 番号の表示は、レジの客面ディスプレイと同じ黒地に白。注文ボタンのすぐ上に出す。 */
+.toast{position:absolute;left:10px;right:10px;bottom:100%;margin-bottom:8px;padding:12px 16px;border-radius:3px;background:#16191c;color:#fff;font-weight:700;font-size:18px;text-align:center;pointer-events:none}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header><h1>わたあめ帳</h1><span class="mode" id="mode">読み込み中</span></header>
-  <div class="stats" id="stats"></div>
-
-  <section aria-labelledby="hMenu">
-    <h2 id="hMenu">注文入力</h2>
-    <div class="menu">
-      <div id="hint"></div>
-      <div class="tiles" id="tiles"></div>
-    </div>
-  </section>
-
-  <section class="list" aria-labelledby="hQueue">
-    <h2 id="hQueue">未伝達　伝えた相手を押す</h2>
+<div class="app">
+  <header><h1>わたあめ帳<span id="day"></span></h1><span class="mode" id="mode"></span></header>
+  <div class="alert" id="alert" role="alert" hidden></div>
+  <nav class="seg" id="seg" aria-label="表示の切り替え"></nav>
+  <main id="pane">
     <div id="queue"></div>
-  </section>
-
-  <details id="dDone"><summary id="doneSum">伝達済み</summary><div id="done"></div></details>
-  <details id="dSales"><summary>集計</summary><div id="sales"></div></details>
+    <div id="done" hidden></div>
+    <div id="sales" hidden></div>
+  </main>
+  <div class="pad">
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    <div class="tiles" id="tiles"></div>
+  </div>
 </div>
-<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script>
 (function(){
@@ -132,10 +132,12 @@ function dayKey(){if(!SPLIT_BY_DATE)return 'all';const d=new Date();return 'd'+S
 const DAY=dayKey();
 const BASE=DB_URL?DB_URL.replace(/\/+$/,'')+'/wataame/'+DAY:'';
 const LS='wataame-cho-v3-'+DAY;
+const DAYLABEL=(new Date().getMonth()+1)+'/'+new Date().getDate();
+const LATE=5*60000; // これより長く未伝達の注文は、時刻を赤い「◯分前」にする。
 
 // server: 保存済みの注文（id→注文）。pend: まだ送れていない変更（id→差分）。
 let server={}, pend={}, online=false, loaded=false, es=null, lastBeat=0, t0=Date.now();
-let flash={}, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
+let tab='queue', flash={}, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
 
 function loadLocal(){try{const x=JSON.parse(localStorage.getItem(LS)||'null');if(x){if(!BASE)server=x.server||{};pend=x.pend||{}}}catch(e){}}
 function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(BASE?{pend}:{server,pend:{}}))}catch(e){}}
@@ -222,53 +224,64 @@ const dots=o=>flv(o).map(f=>'<i class="sq" style="background:var('+(F[f]?F[f].c:
 // 中身が変わったときだけ書き換える。他の端末の更新で、押している最中のボタンが作り直されてタップが消えるのを防ぐ。
 function put(el,html){if(el.__h!==html){el.__h=html;el.innerHTML=html}}
 function renderTiles(){
-  put($('#hint'),dbl?'<div class="hint"><span>ダブル：'+(dbl.length?esc(F[dbl[0]].name)+'＋2つ目':'1つ目')+'を選ぶ</span><button class="link" data-act="dblOff">やめる</button></div>':'');
+  // ダブルの案内はダブルのボタンの中に出す。上に行を足すと、押そうとしたボタンがずれるため。
   put($('#tiles'),FLAVORS.map(f=>{
     const first=dbl&&dbl[0]===f.id,going=pendT[f.id]>0,done=doneT[f.id];
     const sub=going?'送信中':done?done.no+'番':first?'1つ目':dbl?'':'¥'+f.price;
     return '<button class="tile'+(going||done?' hit':first?' sel':'')+'" style="--c:var('+f.c+')" data-act="pick" data-id="'+f.id+'"><span class="name">'+f.name+'</span>'+(sub?'<span class="price">'+sub+'</span>':'')+'</button>';
-  }).join('')+'<button class="tile wide'+(dbl?' on':'')+'" data-act="dbl"><span class="name">ダブル</span><span class="price">¥'+DOUBLE+'</span></button>');
+  }).join('')+(dbl
+    ?'<button class="tile wide on" data-act="dbl"><span class="name">ダブル　'+(dbl.length?esc(F[dbl[0]].name)+'＋2つ目を選ぶ':'1つ目を選ぶ')+'</span><span class="price">やめる</span></button>'
+    :'<button class="tile wide" data-act="dbl"><span class="name">ダブル</span><span class="price">¥'+DOUBLE+'</span></button>'));
 }
 function renderQueue(){
   const w=list().filter(o=>o.status==='new'||flash[o.id]).sort((a,b)=>a.no-b.no);
-  const el=$('#queue');
-  if(!w.length){put(el,'<div class="none">なし</div>');return}
+  const el=$('#queue'),now=Date.now();
+  if(!w.length){put(el,'<div class="none">'+(BASE&&!loaded?'読み込み中':'未伝達の注文はありません')+'</div>');return}
   put(el,w.map(o=>flash[o.id]?'<div class="o sent'+(flash[o.id].out?' out':'')+'"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>✓ '+esc(flash[o.id].m)+' に伝えた</small></span><span class="r">'+['A','B','C'].map(m=>'<span class="mk'+(m===flash[o.id].m?' got':'')+'">'+m+'</span>').join('')+'<span class="x"></span></span></div>':'<div class="o"><span class="no">'+esc(o.no)+'</span>'
-    +'<span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+hm(o.createdAt)+'</small></span>'
+    +'<span class="nm">'+dots(o)+esc(fl(o))+(now-o.createdAt>LATE?'<small class="late">'+(o.kind==='double'?'ダブル　':'')+Math.floor((now-o.createdAt)/60000)+'分前</small>':'<small>'+(o.kind==='double'?'ダブル　':'')+hm(o.createdAt)+'</small>')+'</span>'
     +'<span class="r">'+['A','B','C'].map(m=>'<button class="mk" data-act="told" data-m="'+m+'" data-id="'+esc(o.id)+'" aria-label="製造'+m+'に伝えた">'+m+'</button>').join('')
     +(armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">取消</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(o.no)+'番を取り消す">×</button>')
     +'</span></div>').join(''));
 }
 function renderDone(){
   const d=list().filter(o=>o.status==='told').sort((a,b)=>(b.toldAt||0)-(a.toldAt||0));
-  $('#doneSum').textContent='伝達済み '+d.length;
-  put($('#done'),d.length?d.slice(0,50).map(o=>'<div class="o"><span class="no">'+esc(o.no)+'</span><span class="nm">'+esc(label(o))+'</span><span class="r"><span class="who">'+esc(o.maker||'?')+'</span><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button></span></div>').join(''):'<div class="none">なし</div>');
+  put($('#done'),d.length?'<div class="cap">新しい順　押し間違いは「戻す」</div>'+d.slice(0,300).map(o=>'<div class="o"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+hm(o.toldAt)+'</small></span><span class="r"><span class="who">'+esc(o.maker||'?')+'</span><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button></span></div>').join(''):'<div class="none">まだありません</div>');
+  return d.length;
 }
 function renderSales(){
   const by={},mk={A:0,B:0,C:0};let tq=0,tt=0;
   live().forEach(o=>{const k=o.kind==='double'?'ダブル':fl(o);by[k]=by[k]||{q:0,t:0};by[k].q++;by[k].t+=o.total;tq++;tt+=o.total;if(o.status==='told'&&o.maker in mk)mk[o.maker]++});
-  const rows=FLAVORS.map(f=>f.name).concat('ダブル').filter(k=>by[k]).map(k=>'<tr><td>'+esc(k)+'</td><td>'+by[k].q+'</td><td>'+yen(by[k].t)+'</td></tr>').join('');
-  $('#sales').innerHTML='<table><thead><tr><th>商品</th><th>個数</th><th>金額</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><td>合計</td><td>'+tq+'</td><td>'+yen(tt)+'</td></tr></tfoot></table><div class="sub">伝えた数　A <b>'+mk.A+'</b>B <b>'+mk.B+'</b>C <b>'+mk.C+'</b></div>';
-  $('#stats').innerHTML='<span><b>'+list().filter(o=>o.status==='new').length+'</b>未伝達</span><span><b>'+tq+'</b>注文</span><span><b>'+yen(tt)+'</b>売上</span>';
+  const rows=FLAVORS.map(f=>f.name).concat('ダブル').map(k=>'<tr><td>'+esc(k)+'</td><td>'+(by[k]?by[k].q:0)+'</td><td>'+yen(by[k]?by[k].t:0)+'</td></tr>').join('');
+  put($('#sales'),'<table><thead><tr><th>'+DAYLABEL+'の集計</th><th>個数</th><th>金額</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><td>合計</td><td>'+tq+'</td><td>'+yen(tt)+'</td></tr></tfoot></table>'
+    +'<div class="cap">製造に伝えた数</div><div class="sub"><span><b>'+mk.A+'</b>A</span><span><b>'+mk.B+'</b>B</span><span><b>'+mk.C+'</b>C</span></div>');
+  return tt;
 }
+function renderTabs(nDone,total){
+  const nNew=list().filter(o=>o.status==='new').length;
+  put($('#seg'),[['queue','未伝達',nNew],['done','伝達済み',nDone],['sales','集計',yen(total)]].map(t=>'<button data-act="tab" data-id="'+t[0]+'"'+(tab===t[0]?' class="on" aria-current="true"':'')+'>'+t[1]+'<b>'+t[2]+'</b></button>').join(''));
+  ['queue','done','sales'].forEach(k=>{$('#'+k).hidden=tab!==k});
+}
+// つながっている間は右上に小さく、問題があるときだけ赤い帯で知らせる。
 function renderMode(){
-  const n=Object.keys(pend).length,el=$('#mode');
-  let t,bad=true;
-  if(!BASE){t='この端末のみ保存';bad=false}
-  else if(n)t='未送信 '+n+'件・再送中';
-  else if(!loaded&&Date.now()-t0<8000){t='読み込み中';bad=false}
-  else if(!loaded||!online)t='つながらない・再接続中';
-  else{t='共有・自動保存';bad=false}
-  el.textContent=t;el.classList.toggle('bad',bad);
+  const n=Object.keys(pend).length;
+  let t='',bad='';
+  if(!BASE)t='この端末のみ保存';
+  else if(n)bad='未送信 '+n+'件　電波が戻ると自動で送ります';
+  else if(!loaded&&Date.now()-t0<8000)t='読み込み中';
+  else if(!loaded||!online)bad='つながらない　再接続中';
+  else t='共有中';
+  $('#mode').textContent=t;
+  const al=$('#alert');al.textContent=bad;al.hidden=!bad;
 }
-function render(){renderTiles();renderQueue();renderDone();renderSales();renderMode()}
+function render(){renderTiles();renderQueue();renderTabs(renderDone(),renderSales());renderMode()}
+function toBottom(){const m=$('#pane');m.scrollTop=m.scrollHeight}
 
 // 押した味をすぐ塗りつぶし、保存は裏で順番に行う。続けて押した分は待たせずに受け付ける。
 function take(kind,flavors){
   const ids=flavors.filter((f,i)=>flavors.indexOf(f)===i);
   const o={no:0,kind,flavors,total:kind==='double'?DOUBLE:F[flavors[0]].price,status:'new',createdAt:Date.now(),cid:Date.now().toString(36)+Math.random().toString(36).slice(2,8)};
   ids.forEach(i=>{pendT[i]=(pendT[i]||0)+1;delete doneT[i]});
-  dbl=null;renderTiles();
+  dbl=null;tab='queue';render();
   if(navigator.vibrate)navigator.vibrate(20);
   chain=chain.then(async()=>{
     let ok=true;try{await addOrder(o)}catch(e){ok=false}
@@ -277,7 +290,7 @@ function take(kind,flavors){
       if(ok){const k=++seq;doneT[i]={no:o.no,k};setTimeout(()=>{if(doneT[i]&&doneT[i].k===k){delete doneT[i];renderTiles()}},1200)}
     });
     if(ok)toast(o.no+'番　'+label(o));else fail();
-    render();
+    render();if(ok&&tab==='queue')toBottom();
   });
 }
 
@@ -290,7 +303,7 @@ document.addEventListener('click',e=>{
     if(dbl){dbl.push(id);if(dbl.length===2)take('double',dbl.slice());else renderTiles()}else take('single',[id])
   }
   else if(a==='dbl'){dbl=dbl?null:[];renderTiles()}
-  else if(a==='dblOff'){dbl=null;renderTiles()}
+  else if(a==='tab'){tab=id;render();$('#pane').scrollTop=0}
   else if(a==='told'){
     // 押した行をしばらく青く残して、誰に伝えたかを見せてから伝達済みへ送る。
     const m=b.dataset.m,o=list().find(x=>x.id===id);
@@ -317,11 +330,12 @@ document.addEventListener('touchstart',()=>{},{passive:true});
 // 開いている間は画面を消灯させない。
 function awake(){try{if(navigator.wakeLock&&!document.hidden)navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}}
 document.addEventListener('visibilitychange',awake);awake();
+$('#day').textContent=DAYLABEL;
 loadLocal();render();
 if(BASE){
   connect();
   // Firebaseは30秒ごとに keep-alive を送る。途絶えたらつなぎ直す。
-  setInterval(()=>{if(Date.now()-lastBeat>75000){online=false;connect()}flush();renderMode()},15000);
+  setInterval(()=>{if(Date.now()-lastBeat>75000){online=false;connect()}flush();render()},15000);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)wake()});
   window.addEventListener('online',wake);
   window.addEventListener('pageshow',e=>{if(e.persisted)wake()});

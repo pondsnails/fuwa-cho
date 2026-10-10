@@ -163,7 +163,7 @@ const FLAVORS=[
   {id:'orange',name:'オレンジ',price:300,c:'--f-orange'}
 ];
 const DOUBLE=400, F=Object.fromEntries(FLAVORS.map(f=>[f.id,f]));
-// 番号と集計は日付ごとに分ける。加えて、初日（10/11）は朝9:30に一度リセットする：
+// 番号と集計は日付ごとに分ける。加えて、本番の10/11は朝9:30に一度リセットする：
 // 9:30より前に入れた分（開店前の練習）は別の箱に入り、9:30になると1番から始まる。
 const RESET=new Date(2026,9,11,9,30).getTime();
 function dayKey(){
@@ -286,7 +286,7 @@ function row(o,now,oldest){
 }
 function renderQueue(){
   const w=list().filter(o=>o.status==='new'||flash[o.id]).sort((a,b)=>a.no-b.no),now=Date.now();
-  const how='<div class="how"><b>2</b>製造に伝えたら、伝えた相手 A・B・C を押す</div>';
+  const how='<div class="how"><b>2</b>製造に伝えたら、伝えた持ち場 A・B・C を押す</div>';
   // いちばん古い1件は上に固定し、残りを一覧に並べる。
   const here=tab==='queue',n=w.filter(o=>!flash[o.id]).length;
   $('#pin').classList.toggle('apart',!here&&w.length>0);
@@ -305,15 +305,15 @@ function renderSales(){
   live().forEach(o=>{const k=o.kind==='double'?'ダブル':fl(o);by[k]=by[k]||{q:0,t:0};by[k].q++;by[k].t+=o.total;tq++;tt+=o.total;if(o.status==='told'&&o.maker in mk)mk[o.maker]++});
   const rows=FLAVORS.map(f=>f.name).concat('ダブル').map(k=>'<tr><td>'+esc(k)+'</td><td>'+(by[k]?by[k].q:0)+'</td><td>'+yen(by[k]?by[k].t:0)+'</td></tr>').join('');
   put($('#sales'),'<table><thead><tr><th>'+DAYLABEL+'の集計</th><th>個数</th><th>金額</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><td>合計</td><td>'+tq+'</td><td>'+yen(tt)+'</td></tr></tfoot></table>'
-    +'<div class="cap">製造に伝えた数</div><div class="sub"><span><b>'+mk.A+'</b>A</span><span><b>'+mk.B+'</b>B</span><span><b>'+mk.C+'</b>C</span></div>');
+    +'<div class="cap">持ち場ごとの伝えた数</div><div class="sub"><span><b>'+mk.A+'</b>A</span><span><b>'+mk.B+'</b>B</span><span><b>'+mk.C+'</b>C</span></div>');
   return tt;
 }
 const HELP='<ol class="steps">'
   +'<li><b>1</b><span>注文を受けたら、下の<strong>味</strong>を押す<small>1回押すと1個。番号がついて「未伝達」に並びます。2個なら2回押す</small></span></li>'
   +'<li><b>2</b><span>ダブルは<strong>ダブル</strong>を押してから、味を2つ押す<small>同じ味を2回でもOK。やめるときはもう一度ダブルを押す</small></span></li>'
-  +'<li><b>3</b><span>製造の人に伝えたら、伝えた相手 <i>A</i> <i>B</i> <i>C</i> を押す<small>黄色い行がまだ伝えていない注文。次に伝える注文（いちばん古いもの）は、いつも一番上に出ています。押すと「伝達済み」へ移ります</small></span></li>'
-  +'<li><b>4</b><span>まちがえたとき<small>注文の入れまちがい：「取消」を2回押す<br>相手の押しまちがい：上の「伝達済み」を開いて「戻す」</small></span></li>'
-  +'<li><b>5</b><span>赤い帯が出たら電波が切れています<small>伝えた相手の記録は、電波が戻ると自動で送られます。注文は入らないので、帯が消えてからもう一度押す</small></span></li>'
+  +'<li><b>3</b><span>製造に伝えたら、伝えた持ち場 <i>A</i> <i>B</i> <i>C</i> を押す<small>A・B・C は人ではなく、製造の持ち場の名前です。人が交代しても変わりません<br>黄色い行がまだ伝えていない注文。次に伝える注文（いちばん古いもの）は、いつも一番上に出ています。押すと「伝達済み」へ移ります</small></span></li>'
+  +'<li><b>4</b><span>まちがえたとき<small>注文の入れまちがい：「取消」を2回押す<br>持ち場の押しまちがい：上の「伝達済み」を開いて「戻す」</small></span></li>'
+  +'<li><b>5</b><span>赤い帯が出たら電波が切れています<small>どこに伝えたかの記録は、電波が戻ると自動で送られます。注文は入らないので、帯が消えてからもう一度押す</small></span></li>'
   +'<li><b>6</b><span>全員が同じ画面を見ています<small>誰のスマホで押しても、すぐ全員に反映されます。番号は日ごとに1番から</small></span></li>'
   +'</ol><button class="back" data-act="tab" data-id="queue">注文の画面にもどる</button>';
 function renderTabs(nDone,total){

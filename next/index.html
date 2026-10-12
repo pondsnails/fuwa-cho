@@ -33,7 +33,21 @@ h1 span{margin-left:8px;font-size:12px;font-weight:400;letter-spacing:0;color:va
 .alert{position:absolute;top:0;left:0;right:0;z-index:4;display:flex;align-items:center;justify-content:center;min-height:calc(40px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 14px 0;background:var(--danger);color:#fff;font-size:13px;font-weight:700;text-align:center}
 .alert[hidden]{display:none}
 
-/* 役割の切り替え。下線つきの文字タブ。 */
+.mode{margin-left:auto}
+.rolebtn{margin:0 -8px 0 8px;padding:0 8px;height:40px;font-size:13px;color:var(--blue);white-space:nowrap}
+.rolebtn:active{background:#d9eff9}
+.rolebtn[hidden],.seg[hidden]{display:none}
+/* 最初の画面：自分の役割を選ぶ。選んだあとは、その役割の画面だけになる。 */
+.pick{padding:14px 12px;display:grid;gap:10px;max-width:560px;margin:0 auto}
+.pick p{margin:2px 2px 4px;font-size:15px;font-weight:700}
+.role{display:block;width:100%;padding:14px 16px 13px;text-align:left;background:var(--panel);border:1px solid var(--blue);border-bottom-width:4px;border-radius:3px}
+.role:active{background:var(--blue);color:#fff}
+.role b{display:block;font-size:19px}
+.role span{display:block;margin-top:2px;font-size:13px;color:var(--muted)}
+.role:active span{color:inherit}
+.role.sub{border-color:var(--f-plain)}
+.role.sub:active{background:var(--f-plain)}
+/* 役割の中の切り替え（オーダー管理の「伝える／お渡し」）。下線つきの文字タブ。 */
 .seg{flex:none;display:flex;border-bottom:1px solid var(--line)}
 .seg button{flex:1 1 auto;height:44px;padding:0 2px;font-size:14px;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap}
 .seg button:active{background:#d9eff9}
@@ -181,7 +195,7 @@ tfoot td{font-weight:700;font-size:18px}
 </head>
 <body>
 <div class="app" id="app" data-view="take">
-  <header><h1>わたあめ帳<span id="day"></span></h1><span class="mode" id="mode"></span></header>
+  <header><h1>わたあめ帳<span id="day"></span></h1><span class="mode" id="mode"></span><button class="rolebtn" id="rolebtn" data-act="roles" hidden></button></header>
   <div class="alert" id="alert" role="alert" hidden></div>
   <nav class="seg" id="seg" aria-label="役割の切り替え"></nav>
   <main id="pane"></main>
@@ -214,7 +228,14 @@ const DOUBLE=400, F=Object.fromEntries(FLAVORS.map(f=>[f.id,f]));
 // 注文の進み方。new（まだ伝えてない）→ told（作る人に伝えた。maker に A・B・C）→ done（渡した）。ほかに cancel（取り消し）。
 // 作る人は手がべたべたで画面を押せないので、押すのは会計の人と、伝える・渡す人だけ。
 const STATUS={new:'まだ伝えてない',told:'伝えた',done:'渡した',cancel:'取り消し'};
-const VIEWS=[['take','会計'],['tell','伝える'],['give','お渡し'],['makers','作る人用'],['sum','集計']];
+// 役割 → その役割で見る画面。オーダー管理だけ、伝える／お渡しの2画面を行き来する。
+const ROLES=[
+  ['cash','会計','注文を聞いて、味を押す人',['take']],
+  ['order','オーダー管理','作る人に伝えて、できたものを渡す人',['tell','give']],
+  ['makers','作る人に見せる画面','置いておくだけ。押す所はありません',['makers']],
+  ['sum','集計','売上と、取り消した注文',['sum']]
+];
+const VIEWNAME={tell:'伝える',give:'お渡し'};
 const MAKERS=['A','B','C'];
 const LATE=10*60000; // これより長く待っている注文は、カードを赤みにする。
 
@@ -226,7 +247,7 @@ const dayLabel=()=>(new Date().getMonth()+1)+'/'+new Date().getDate();
 
 // server: 保存済みの注文（id→注文）。pend: まだ送れていない変更（id→差分）。
 let server={}, pend={}, online=false, loaded=false, es=null, lastBeat=0, t0=Date.now();
-let view='take', flash={}, stuck=false, pendAt=0, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
+let role=null, view='take', flash={}, stuck=false, pendAt=0, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
 
 function loadLocal(){try{const x=JSON.parse(localStorage.getItem(LS)||'null');if(x){if(!BASE)server=x.server||{};pend=x.pend||{}}}catch(e){}}
 function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(BASE?{pend}:{server,pend:{}}))}catch(e){}}
@@ -407,8 +428,19 @@ function viewSum(){
     +(c.length?c.slice(0,200).map(o=>'<div class="o gone"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+(o.cancelAt?hm(o.cancelAt)+' に取消':'取消')+'</small></span><span class="r"><button class="link" data-act="set" data-to="new" data-id="'+esc(o.id)+'">戻す</button></span></div>').join(''):'<div class="none">ありません</div>');
 }
 function renderTabs(){
+  const r=ROLES.find(x=>x[0]===role),seg=$('#seg'),btn=$('#rolebtn');
+  btn.hidden=!r;if(r)btn.textContent=r[1]+'　変える';
+  const views=r?r[3]:[];
+  seg.hidden=views.length<2;if(seg.hidden)return;
   const all=list(),n={tell:all.filter(o=>o.status==='new').length,give:all.filter(o=>o.status==='told').length};
-  put($('#seg'),VIEWS.map(v=>'<button data-act="view" data-id="'+v[0]+'"'+(view===v[0]?' class="on" aria-current="true"':'')+'>'+v[1]+(n[v[0]]?'<b'+(v[0]==='tell'?' class="hot"':'')+'>'+n[v[0]]+'</b>':'')+'</button>').join(''));
+  put(seg,views.map(v=>'<button data-act="view" data-id="'+v+'"'+(view===v?' class="on" aria-current="true"':'')+'>'+VIEWNAME[v]+(n[v]?'<b'+(v==='tell'?' class="hot"':'')+'>'+n[v]+'</b>':'')+'</button>').join(''));
+}
+function viewPick(){
+  return '<div class="pick"><p>自分の役割を選んでください</p>'+ROLES.map((r,i)=>'<button class="role'+(i>1?' sub':'')+'" data-act="role" data-id="'+r[0]+'"><b>'+r[1]+'</b><span>'+r[2]+'</span></button>').join('')+'</div>';
+}
+function setRole(r){
+  const x=ROLES.find(y=>y[0]===r);role=x?r:null;if(x&&!x[3].includes(view))view=x[3][0];
+  try{if(role)localStorage.setItem('wataame-cho-next-role',role);else localStorage.removeItem('wataame-cho-next-role');history.replaceState(null,'',role?'#'+role:location.pathname+location.search)}catch(e){}
 }
 // つながっている間は右上に小さく、問題があるときだけ赤い帯で知らせる。
 function renderMode(){
@@ -425,9 +457,10 @@ function renderMode(){
 }
 function render(){
   const now=Date.now();
-  $('#app').dataset.view=view;$('#pad').hidden=view!=='take';
-  renderTabs();if(view==='take'){renderTiles();renderLast()}
-  put($('#pane'),view==='take'?viewTake(now):view==='tell'?viewTell(now):view==='give'?viewGive(now):view==='makers'?viewMakers():viewSum());
+  const v=role?view:'pick';
+  $('#app').dataset.view=v;$('#pad').hidden=v!=='take';
+  renderTabs();if(v==='take'){renderTiles();renderLast()}
+  put($('#pane'),v==='pick'?viewPick():view==='take'?viewTake(now):view==='tell'?viewTell(now):view==='give'?viewGive(now):view==='makers'?viewMakers():viewSum());
   renderMode();
 }
 
@@ -478,7 +511,9 @@ document.addEventListener('click',e=>{
     if(dbl){dbl.push(id);if(dbl.length===2)take('double',dbl.slice());else renderTiles()}else take('single',[id])
   }
   else if(a==='dbl'){dbl=dbl?null:[];renderTiles()}
-  else if(a==='view'){view=id;try{localStorage.setItem('wataame-cho-next-view',view);history.replaceState(null,'','#'+view)}catch(e){}render();$('#pane').scrollTop=0}
+  else if(a==='view'){view=id;render();$('#pane').scrollTop=0}
+  else if(a==='role'){setRole(id);render();$('#pane').scrollTop=0}
+  else if(a==='roles'){setRole(null);dbl=null;render();$('#pane').scrollTop=0}
   else if(a==='set')setStatus(id,b.dataset.to);
   else if(a==='told')told(id,b.dataset.m);
   else if(a==='cancel'){armCancel=id;render();setTimeout(()=>{if(armCancel===id){armCancel=null;render()}},3000)}
@@ -505,8 +540,8 @@ document.addEventListener('touchstart',()=>{},{passive:true});
 // 開いている間は画面を消灯させない。
 function awake(){try{if(navigator.wakeLock&&!document.hidden)navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}}
 document.addEventListener('visibilitychange',awake);awake();
-// 役割は端末ごとに覚える。URLの #make などでも指定できる（掲示板用の端末をブックマークしておける）。
-try{const h=location.hash.slice(1)||localStorage.getItem('wataame-cho-next-view');if(VIEWS.some(v=>v[0]===h))view=h}catch(e){}
+// 役割は端末ごとに覚える。URLの #cash #order #makers でも指定できる（置いておく端末をブックマークしておける）。
+try{setRole(location.hash.slice(1)||localStorage.getItem('wataame-cho-next-role'))}catch(e){}
 setInterval(tick,1000);
 $('#day').textContent=dayLabel();
 loadLocal();if(Object.keys(pend).length){stuck=true;pendAt=Date.now()}render();

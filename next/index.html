@@ -194,6 +194,14 @@ tfoot td{font-weight:700;font-size:18px}
 .mp.rest .ml{font-size:20px;color:var(--muted)}
 .mp .txt{height:44px;padding:0 4px;font-size:13px;color:var(--blue);text-align:left}
 .mp .txt.sm{font-size:11px;color:var(--muted);height:auto;padding:2px 0 0;display:block}
+/* 1人に2件以上頼んである（ふつうは起きない）。赤い枠で知らせ、その場で直せるようにする。 */
+.mp2{padding:6px 8px 8px;background:#fff0ec;border-bottom:1px solid var(--line);box-shadow:inset 6px 0 0 var(--danger)}
+.mp2 p{display:flex;align-items:center;gap:8px;margin:0 0 4px;font-size:13px;font-weight:700;color:var(--danger)}
+.mp2 .ml{width:38px;font-size:26px;text-align:center;color:var(--danger)}
+.j2{display:grid;grid-template-columns:2.4em minmax(0,1fr) auto auto;gap:6px;align-items:center;padding:4px 0 4px 46px}
+.j2 strong{font-size:22px;font-variant-numeric:tabular-nums}
+.j2 span{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mb.sm{height:44px;padding:0 8px;font-size:13px;border-bottom-width:3px}
 /* 待ちの列。番号と味だけ。 */
 .o.w{min-height:46px;padding-top:4px;padding-bottom:4px;box-shadow:inset 6px 0 0 #f5c400;background:#fffbe6}
 .o.w.old{box-shadow:inset 6px 0 0 var(--danger);background:#fff0ec}
@@ -541,9 +549,13 @@ function renderQueue(){
   // 上：A・B・C の枠
   put($('#board'),MAKERS.map(m=>{
     const jobs=all.filter(o=>o.status==='told'&&o.maker===m).sort((a,b)=>(a.toldAt||0)-(b.toldAt||0));
+    // 作る人に頼むのは1件ずつ。2件以上あるのは、たいてい押しまちがい。赤い枠にして、その場で直せるようにする。
+    if(jobs.length>1){
+      return '<div class="mp2"><p><b class="ml">'+m+'</b>'+jobs.length+'件 頼んであります。ふつうは1件です</p>'+jobs.map(o=>'<div class="j2"><strong>'+esc(num(o))+'</strong><span>'+dots(o)+esc(fl(o))+'</span><button class="mb sm" data-act="unassign" data-id="'+esc(o.id)+'">待ちに戻す</button><button class="mb sm" data-act="give" data-id="'+esc(o.id)+'">渡した</button></div>').join('')+'</div>';
+    }
     if(jobs.length){
       const o=jobs[0],min=Math.floor((now-(o.toldAt||now))/60000);
-      return '<div class="mp"><b class="ml">'+m+'</b><div class="mi"><strong>'+esc(num(o))+'</strong><span>'+dots(o)+esc(fl(o))+'</span><small'+(min>=15?' class="late"':'')+'>'+(min<1?'いま頼んだ':min+'分')+(jobs.length>1?'　ほか'+(jobs.length-1)+'件':'')+'</small></div>'
+      return '<div class="mp"><b class="ml">'+m+'</b><div class="mi"><strong>'+esc(num(o))+'</strong><span>'+dots(o)+esc(fl(o))+'</span><small'+(min>=15?' class="late"':'')+'>'+(min<1?'いま頼んだ':min+'分')+'</small></div>'
         +'<button class="mb" data-act="give" data-id="'+esc(o.id)+'" aria-label="'+esc(num(o))+'番を渡した">渡した</button></div>';
     }
     if(rest[m])return '<div class="mp rest"><b class="ml">'+m+'</b><div class="mi"><span class="idle">休み</span></div><button class="txt" data-act="rest" data-m="'+m+'">もどす</button></div>';
@@ -753,6 +765,7 @@ document.addEventListener('click',e=>{
     if(navigator.vibrate)navigator.vibrate(40);
     patchOrder(id,{status:'told',maker:m,toldAt:Date.now()});toast(num(o)+'番　'+m+' に頼んだ');
   }
+  else if(a==='unassign'){const o=list().find(x=>x.id===id);if(!o||o.status!=='told')return;patchOrder(id,{status:'new',maker:null});toast(num(o)+'番を待ちに戻した')}
   else if(a==='rest'){const m=b.dataset.m;rest[m]=!rest[m];try{localStorage.setItem('wataame-cho-next-rest',JSON.stringify(rest))}catch(e){}render()}
   else if(a==='undo'){
     // 1つ前の段階に戻す。渡した → まだ渡してない、まだ渡してない → まだ伝えてない。取り消した注文は、取り消す前の状態に戻す。

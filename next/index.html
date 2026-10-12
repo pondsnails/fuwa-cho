@@ -169,22 +169,20 @@ tfoot td{font-weight:700;font-size:18px}
 /* オーダー管理の上半分：A・B・C の枠。位置は動かない。作っている人には「渡した」、空いた人には「次を頼む」。 */
 .board{display:none}
 .app[data-role=order] .board{flex:none;display:block;background:var(--panel);border-top:1px solid var(--line);border-bottom:2px solid var(--ink)}
-.mp{display:grid;grid-template-columns:46px minmax(0,1fr) 148px;gap:6px;align-items:center;height:78px;padding:0 8px 0 0;border-bottom:1px solid var(--line)}
+.mp{display:grid;grid-template-columns:52px minmax(0,1fr) 150px;gap:6px;align-items:center;height:84px;padding:0 10px 0 0;border-bottom:1px solid var(--line)}
 .mp:last-child{border-bottom:0}
 /* 作っている人の枠：右端に小さく「待ちに戻す」。頼む相手をまちがえたとき用で、ふだんは押さない。 */
-.mp.busy{grid-template-columns:46px minmax(0,1fr) 118px 40px;padding-right:2px}
 .mp .txt.back2{height:62px;padding:0;font-size:11px;line-height:1.3;color:var(--muted);text-align:center;white-space:nowrap}
 .mp .ml{font-size:30px;font-weight:700;text-align:center;color:var(--blue)}
 .mp .mi{min-width:0}
-.mp .mi strong{display:block;font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
-.mp .mi span{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp .mi strong{display:block;font-size:30px;line-height:1.15;font-variant-numeric:tabular-nums}
+.mp .mi span{display:block;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mp .mi small{display:block;font-size:11px;color:var(--muted)}
 .mp .mi small.late{color:var(--danger);font-weight:700}
 .mp .idle{font-size:17px;font-weight:600;color:var(--muted)}
 .mb{height:62px;padding:0 6px;border:1px solid var(--blue);border-bottom-width:4px;border-radius:3px;background:var(--panel);color:var(--blue);font-weight:700;font-size:18px;white-space:nowrap;overflow:hidden}
 .mb:active{background:var(--blue);color:#fff}
 /* 空いている人の枠は、薄い青の地に青い塗りのボタン。「この人に次を頼める」がいちばん目に入るようにする。 */
-.mp.free{background:#eaf6fc}
 .mb.go{background:var(--blue);color:#fff;font-size:15px}
 .mb.go:active{background:var(--blue-press);border-color:var(--blue-press)}
 .mb.go small{display:block;margin-top:1px;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis}
@@ -202,20 +200,22 @@ tfoot td{font-weight:700;font-size:18px}
 .j2 span{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mb.sm{height:44px;padding:0 8px;font-size:13px;border-bottom-width:3px}
 /* 待ちの列。番号と味だけ。 */
-.o.w{min-height:46px;padding-top:4px;padding-bottom:4px;box-shadow:inset 6px 0 0 #f5c400;background:#fffbe6}
-.o.w.old{box-shadow:inset 6px 0 0 var(--danger);background:#fff0ec}
+.o.w{min-height:52px;padding-top:4px;padding-bottom:4px;padding-right:8px}
 .o.w .no{font-size:20px}
 /* 先に作ることにした注文 */
-.o.w.sel,.o.w.old.sel{box-shadow:inset 6px 0 0 var(--blue);background:#e3f2fb}
-.o.w .ago{font-size:12px;color:var(--muted);padding-right:2px}
+.o.w .r{gap:6px}
+.o.w .mk{width:48px;height:42px}
+.mp.emp .ml{color:var(--muted)}
+.o.w .ago{font-size:13px;min-width:2.6em;text-align:right;color:var(--muted);padding-right:4px}
 .o.w .x{height:38px}
 .o.w.old .ago{color:var(--danger);font-weight:700}
 /* オーダー管理のいちばん下の帯。渡した注文と取り消した注文は、ここから開く。主役は上の割り振りなので、小さく置く。 */
 .more{display:none}
-.app[data-role=order] .more{flex:none;display:flex;background:var(--strip);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
-.more button{flex:1;height:44px;font-size:13px;color:var(--blue)}
-.more button+button{border-left:1px solid var(--line)}
-.more button:active{background:#d9eff9}
+.app[data-role=order] .more{flex:none;display:flex;align-items:center;gap:8px;height:52px;padding:0 6px 0 14px;background:var(--panel);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.more .la{flex:1;min-width:0;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.more .ub{height:38px;padding:0 12px;border:1px solid var(--blue);border-radius:3px;color:var(--blue);font-size:14px;font-weight:700}
+.more .ub:active{background:var(--blue);color:#fff}
+.more .all{height:44px;padding:0 8px;color:var(--blue);font-size:13px}
 .more b{margin-left:6px;color:var(--ink);font-variant-numeric:tabular-nums}
 #pick,#mine{display:none}
 .app[data-role=pick] #pick{display:block}
@@ -370,7 +370,7 @@ main{min-height:64px}
 <div class="sheet" id="log" role="dialog" aria-label="渡した注文・取り消した注文" hidden>
   <div class="box">
     <header><h1 id="logTitle"></h1><button class="helpbtn" data-act="logOff">とじる</button></header>
-    <div class="body"><div id="done"></div><div id="gone"></div></div>
+    <div class="body"><div id="fix"></div><div id="done"></div><div id="gone"></div></div>
     <div class="foot"><button class="back" data-act="logOff">とじる</button></div>
   </div>
 </div>
@@ -569,13 +569,13 @@ let rest={};try{rest=JSON.parse(localStorage.getItem('wataame-cho-next-rest')||'
 // 渡した直後の注文（id→押した時刻）。4秒は枠に「戻す」を出す。
 const gave={},lockUntil={};
 // 先に作ることにした注文（待ちの列で押して選ぶ）。選んでいなければ、いちばん古い注文が次。30秒たつか、頼んだら解除。
-let sel=null,selAt=0;
+let lastAct=null;
 const waiting=()=>list().filter(o=>o.status==='new').sort((a,b)=>a.no-b.no);
 function renderQueue(){
   if(role!=='order')return;
   const now=Date.now(),all=list(),w=waiting();
-  if(sel&&(now-selAt>30000||!w.some(o=>o.id===sel)))sel=null;
-  const next=w.find(o=>o.id===sel)||w[0];
+  // 空いている人（何も頼んでいない人）。待ちの行には、この人たちのボタンだけを出す。
+  const free=MAKERS.filter(m=>!all.some(o=>o.status==='told'&&o.maker===m));
   // 上：A・B・C の枠
   put($('#board'),MAKERS.map(m=>{
     const jobs=all.filter(o=>o.status==='told'&&o.maker===m).sort((a,b)=>(a.toldAt||0)-(b.toldAt||0));
@@ -585,25 +585,17 @@ function renderQueue(){
     }
     if(jobs.length){
       const o=jobs[0],min=Math.floor((now-(o.toldAt||now))/60000);
-      return '<div class="mp busy"><b class="ml">'+m+'</b><div class="mi"><strong>'+esc(num(o))+'</strong><span>'+dots(o)+esc(fl(o))+'</span><small'+(min>=15?' class="late"':'')+'>'+(min<1?'いま頼んだ':min+'分')+'</small></div>'
-        +'<button class="mb" data-act="give" data-id="'+esc(o.id)+'" aria-label="'+esc(num(o))+'番を渡した">渡した</button><button class="txt back2" data-act="unassign" data-id="'+esc(o.id)+'">待ちに<br>戻す</button></div>';
+      return '<div class="mp"><b class="ml">'+m+'</b><div class="mi"><strong>'+esc(num(o))+'</strong><span>'+dots(o)+esc(fl(o))+'</span></div>'
+        +'<button class="mb" data-act="give" data-id="'+esc(o.id)+'" aria-label="'+esc(num(o))+'番を渡した">渡した</button></div>';
     }
-    if(rest[m])return '<div class="mp rest"><b class="ml">'+m+'</b><div class="mi"><span class="idle">休み</span></div><button class="txt" data-act="rest" data-m="'+m+'">もどす</button></div>';
-    const last=all.filter(o=>o.status==='done'&&o.maker===m&&gave[o.id]&&now-gave[o.id]<4000)[0];
-    return '<div class="mp free"><b class="ml">'+m+'</b><div class="mi">'
-      +(last?'<button class="txt" data-act="ungive" data-id="'+esc(last.id)+'">'+esc(num(last))+'番 渡した<br>まちがえたら押す</button>'
-            :'<span class="idle">空き</span><button class="txt sm" data-act="rest" data-m="'+m+'">いないときは押す</button>')
-      +'</div>'
-      +(next?'<button class="mb go" data-act="assign" data-m="'+m+'" data-id="'+esc(next.id)+'">次を頼む<small>'+esc(num(next))+'　'+esc(fl(next))+'</small></button>'
-            :'<button class="mb" disabled>待ちなし</button>')
-      +'</div>';
+    return '<div class="mp emp"><b class="ml">'+m+'</b><div class="mi"><span class="idle">空き</span></div><span></span></div>';
   }).join(''));
   // 下：待ちの列
-  put($('#queue'),w.length?'<div class="cap">待ち '+w.length+'件（古い順）'+(w.length>1?'　先に作る注文は、押して選ぶ':'')+'</div>'+w.slice(0,100).map((o,i)=>{
+  // 頼むのは注文の行で。空いている人のボタンだけが出るので、順番を飛ばすときも、その行で押すだけ。
+  put($('#queue'),w.length?'<div class="cap">待ち '+w.length+'件（古い順）'+(free.length?'　頼む相手を押す':'')+'</div>'+w.slice(0,100).map(o=>{
       const min=Math.floor((now-o.createdAt)/60000),late=now-o.createdAt>LATE;
-      const nx=next&&o.id===next.id;
-      return '<div class="o w'+(late?' old':'')+(nx&&sel?' sel':'')+'" data-act="choose" data-id="'+esc(o.id)+'"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+(nx||o.kind==='double'?'<small>'+(nx?'<span class="tag">次に頼む</span>':'')+(o.kind==='double'?'ダブル':'')+'</small>':'')+'</span><span class="r"><span class="ago">'+(min<1?'いま':min+'分')+'</span>'
-        +(armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">本当に<br>消す</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(num(o))+'番を取り消す">取消</button>')+'</span></div>';
+      return '<div class="o w'+(late?' old':'')+'"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+'</span><span class="r"><span class="ago">'+(min<1?'いま':min+'分')+'</span>'
+        +free.map(m=>'<button class="mk" data-act="assign" data-m="'+m+'" data-id="'+esc(o.id)+'" aria-label="'+esc(num(o))+'番を'+m+'に頼む">'+m+'</button>').join('')+'</span></div>';
     }).join('')
     :'<div class="none">'+(BASE&&!loaded?'読み込み中':'<strong>待っている注文はありません</strong>')+'</div>');
 }
@@ -612,12 +604,16 @@ function renderDone(){
   const all=list();
   // 渡した注文の履歴（新しい順）。押しまちがえたら、ここで戻す。
   const g=all.filter(o=>o.status==='done').sort((a,b)=>(b.doneAt||0)-(a.doneAt||0));
-  if(log==='done')moved('done',g.slice(0,200).map(o=>o.id),false);
-  put($('#done'),g.length?'<div class="cap">渡した注文（新しい順）　まちがえたら「戻す」</div>'+g.slice(0,200).map(o=>'<div class="o"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+esc(o.maker||'?')+'　'+hm(o.doneAt)+' に渡した</small></span><span class="r"><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button></span></div>').join('')
-    :'<div class="none"><strong>まだ渡した注文はありません</strong></div>');
+  if(log)moved('done',g.slice(0,200).map(o=>o.id),false);
+  const row=(o,sub,btn)=>'<div class="o"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+sub+'</small></span><span class="r">'+btn+'</span></div>';
+  const t=all.filter(o=>o.status==='told').sort((a,b)=>(a.toldAt||0)-(b.toldAt||0)),w=waiting();
+  put($('#fix'),(t.length?'<div class="cap">作っている注文</div>'+t.map(o=>row(o,esc(o.maker||'?')+' が作っている','<button class="link" data-act="unassign" data-id="'+esc(o.id)+'">待ちに戻す</button>')).join(''):'')
+    +(w.length?'<div class="cap">待っている注文</div>'+w.slice(0,100).map(o=>row(o,hm(o.createdAt)+' に注文',armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">本当に<br>消す</button>':'<button class="link" data-act="cancel" data-id="'+esc(o.id)+'">取消</button>')).join(''):''));
+  put($('#done'),g.length?'<div class="cap">渡した注文（新しい順）</div>'+g.slice(0,200).map(o=>'<div class="o"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+esc(o.maker||'?')+'　'+hm(o.doneAt)+' に渡した</small></span><span class="r"><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button></span></div>').join('')
+    :'');
   // 取り消した注文は専用のタブに残す。番号が飛んで見える理由が分かり、まちがって消したときに戻せる。
   const c=all.filter(o=>o.status==='cancel').sort((a,b)=>(b.cancelAt||0)-(a.cancelAt||0));
-  put($('#gone'),c.length?'<div class="cap">まちがって消したら「戻す」</div>'+c.slice(0,300).map(o=>'<div class="o gone"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+(o.cancelAt?hm(o.cancelAt)+' に取消':'取消')+'</small></span><span class="r"><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button></span></div>').join(''):'<div class="none">取り消した注文はありません</div>');
+  put($('#gone'),c.length?'<div class="cap">取り消した注文</div>'+c.slice(0,300).map(o=>'<div class="o gone"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+(o.cancelAt?hm(o.cancelAt)+' に取消':'取消')+'</small></span><span class="r"><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button></span></div>').join(''):'');
   return g.length;
 }
 function renderSales(){
@@ -640,11 +636,9 @@ const HELP='<p class="lead">やることは3つだけ</p>'
   +'<div><dt>味を押しまちがえた</dt><dd>「取消」を2回</dd></div>'
   +'<div><dt>それ以外</dt><dd>上の「取消」か「渡した」を開いて「戻す」</dd></div>'
   +'</dl>';
-function renderTabs(nDone){
-  const nGone=list().filter(o=>o.status==='cancel').length;
-  put($('#more'),'<button data-act="log" data-id="done">渡した注文<b>'+nDone+'</b></button><button data-act="log" data-id="gone">取り消した注文<b>'+nGone+'</b></button>');
-  $('#done').hidden=log!=='done';$('#gone').hidden=log!=='gone';
-  $('#logTitle').textContent=log==='gone'?'取り消した注文':'渡した注文';
+function renderTabs(){
+  put($('#more'),'<span class="la">'+(lastAct?esc(lastAct.text):'')+'</span>'+(lastAct?'<button class="ub" data-act="back">元に戻す</button>':'')+'<button class="all" data-act="log" data-id="all">注文一覧</button>');
+  $('#logTitle').textContent='注文一覧';
 }
 // つながっている間は右上に小さく、問題があるときだけ赤い帯で知らせる。
 function renderMode(){
@@ -769,7 +763,7 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b||b.disabled)return;
   const a=b.dataset.act;let id=b.dataset.id,mk=b.dataset.m;
   // 行が動いた直後：伝える・渡したは、動く前にその位置にあった注文として扱う。戻す・取消は安全側に倒して受け付けない。
-  if(role==='order'&&log==='done'&&Date.now()<guardUntil&&(a==='told'||a==='give'||a==='undo'||a==='cancel'||a==='cancel2')){
+  if(role==='order'&&log&&Date.now()<guardUntil&&(a==='told'||a==='give'||a==='undo'||a==='cancel'||a==='cancel2')){
     const hit=(a==='told'||a==='give')&&snap.find(i=>i.a===a&&e.clientX>=i.l&&e.clientX<=i.r&&e.clientY>=i.t&&e.clientY<=i.b);
     const o=hit&&list().find(x=>x.id===hit.id);
     if(!o||o.status!==(a==='told'?'new':'told')||flash[o.id])return;
@@ -798,18 +792,21 @@ document.addEventListener('click',e=>{
     if(navigator.vibrate)navigator.vibrate(30);
     gave[id]=Date.now();if(o.maker)lockUntil[o.maker]=Date.now()+700;
     setTimeout(()=>{if(gave[id]&&Date.now()-gave[id]>=3900){delete gave[id];render()}},4100);
-    patchOrder(id,{status:'done',doneAt:Date.now()});toast(num(o)+'番　渡した');
+    lastAct={id,now:'done',patch:{status:'told'},text:num(o)+'番を渡した'};patchOrder(id,{status:'done',doneAt:Date.now()});
   }
   else if(a==='ungive'){const o=list().find(x=>x.id===id);delete gave[id];patchOrder(id,{status:'told'});toast((o?num(o)+'番を':'')+'作っているところに戻した')}
   else if(a==='assign'){
     // 空いた人に、列の先頭を頼む。ボタンに書いてあった注文がもう無ければ（もう1台が先に頼んだ等）、何もせず描き直す。
     const m=b.dataset.m,o=list().find(x=>x.id===id);
-    if(Date.now()<(lockUntil[m]||0))return;
     if(!o||o.status!=='new'){render();return}
     if(navigator.vibrate)navigator.vibrate(40);
-    sel=null;patchOrder(id,{status:'told',maker:m,toldAt:Date.now()});toast(num(o)+'番　'+m+' に頼んだ');
+    lastAct={id,now:'told',patch:{status:'new',maker:null},text:num(o)+'番を '+m+' に頼んだ'};patchOrder(id,{status:'told',maker:m,toldAt:Date.now()});
   }
-  else if(a==='choose'){const w=waiting();sel=(sel===id||(w[0]&&w[0].id===id))?null:id;selAt=Date.now();render();if(sel)setTimeout(()=>{if(sel===id&&Date.now()-selAt>=30000){sel=null;render()}},30100)}
+  else if(a==='back'){
+    // 直前にやったことを元に戻す。そのあと別の端末で状態が変わっていたら、何もしない。
+    const u=lastAct,o=u&&list().find(x=>x.id===u.id);lastAct=null;
+    if(o&&o.status===u.now){patchOrder(u.id,u.patch);toast(num(o)+'番を元に戻した')}else render();
+  }
   else if(a==='unassign'){const o=list().find(x=>x.id===id);if(!o||o.status!=='told')return;patchOrder(id,{status:'new',maker:null});toast(num(o)+'番を待ちに戻した')}
   else if(a==='rest'){const m=b.dataset.m;rest[m]=!rest[m];try{localStorage.setItem('wataame-cho-next-rest',JSON.stringify(rest))}catch(e){}render()}
   else if(a==='undo'){

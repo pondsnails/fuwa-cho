@@ -697,7 +697,8 @@ function renderAsk(){
   $('#askTitle').textContent=(ask.kind==='double'?'ダブル ':'')+ask.flavors.map(f=>F[f].name).join('＋');
   const no=$('#askNo');no.classList.toggle('empty',!ask.d);put(no,ask.d?esc(ask.d)+'<small>番</small>':'札の番号');
   const c=$('#askC'),n0=Number(ask.d),ok0=n0>=1&&n0<=TAG_MAX,tc=ok0?tagColor(n0):null;
-  c.textContent=tc?tc[1]:ask.d?'':'札の色がここに出ます';c.style.background=tc?tc[2]:'';c.style.color=tc?tc[3]:'';
+  // 色の名前は書かない（帯の色だけで足りる。ユーザー判断）。読み上げ用にだけ名前を持たせる。
+  c.textContent=tc||ask.d?'':'札の色がここに出ます';c.style.background=tc?tc[2]:'';c.setAttribute('aria-label',tc?tc[1]:'');
   const w=$('#askWarn');w.hidden=!ask.warn;w.textContent=ask.warn||'';
   put($('#askKeys'),['1','2','3','4','5','6','7','8','9'].map(k=>'<button class="key" data-act="k" data-id="'+k+'">'+k+'</button>').join('')
     +'<button class="key fn" data-act="kdel">1つ消す</button><button class="key" data-act="k" data-id="0">0</button><button class="key ok" data-act="kok"'+(ask.d?'':' disabled')+'>決定</button>');

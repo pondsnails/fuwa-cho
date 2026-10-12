@@ -48,8 +48,9 @@ h1 span{margin-left:8px;font-size:12px;font-weight:400;letter-spacing:0;color:va
 main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--bg);border-top:1px solid var(--line)}
 .o{max-height:120px;display:grid;grid-template-columns:2em minmax(0,1fr) auto;gap:6px;align-items:center;min-height:60px;padding:8px 8px 8px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
 /* 未伝達の行は黄色く塗って、白い「済み」の行とひと目で区別する。5分以上待たせた行は赤み。 */
-.o.wait{background:#fff3b8;border-bottom-color:#ead98a}
-.o.wait.old{background:#ffd9d0;border-bottom-color:#eeb4a8}
+/* まだ伝えていない行。左に黄色い帯、地はごく薄い黄色。前は行全体を濃い黄色で塗っていたが、青いボタンとぶつかって画面がうるさかった。 */
+.o.wait{background:#fffbe6;box-shadow:inset 6px 0 0 #f5c400}
+.o.wait.old{background:#fff0ec;box-shadow:inset 6px 0 0 var(--danger)}
 .o .no{font-weight:700;font-size:22px;font-variant-numeric:tabular-nums}
 .o .nm{font-weight:600;font-size:15px;overflow-wrap:anywhere}
 .o .nm small{display:block;font-weight:400;font-size:11px;color:var(--muted)}
@@ -58,7 +59,8 @@ main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;oversc
 /* 伝えた行：押したボタンの側から青が広がり、押した文字だけ白抜きでその場に残る。少し見せてから畳む。 */
 .o.sent{color:#fff;background:linear-gradient(var(--blue),var(--blue)) right/100% 100% no-repeat;animation:wipe .16s ease-out}
 .o.sent .nm small{color:inherit;font-size:13px;font-weight:700}
-.o.sent .mk{background:none;color:transparent}
+.o.sent{box-shadow:none}
+.o.sent .mk{background:none;border-color:transparent;color:transparent}
 .o.sent .mk.got{background:#fff;color:var(--blue)}
 .o.sent .x{visibility:hidden}
 .o.sent .sq{box-shadow:0 0 0 1px #fff}
@@ -70,8 +72,10 @@ main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;oversc
 .o.gone .no{font-weight:400}
 .o.gone .sq{opacity:.45}
 .sq{display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:2px}
-.mk{display:inline-flex;align-items:center;justify-content:center;width:46px;height:44px;border-radius:3px;background:var(--blue);color:#fff;font-weight:700;font-size:17px}
-.mk:active{background:#0c5f82}
+/* A・B・C。味のタイルと同じ作り（白地、色の線、下だけ太い）にそろえる。塗りつぶすのは押した瞬間と、押したあとだけ。
+   前は青い塗りつぶしが行の数×3個並んで、画面でいちばん強い色になっていた。 */
+.mk{display:inline-flex;align-items:center;justify-content:center;width:46px;height:44px;border:1px solid var(--blue);border-bottom-width:3px;border-radius:3px;background:var(--panel);color:var(--blue);font-weight:700;font-size:17px}
+.mk:active{background:var(--blue);color:#fff}
 .x{display:inline-block;width:42px;height:44px;color:var(--muted);font-size:12px}
 .x:active,.link:active{background:#d9eff9;border-radius:3px}
 .x.arm,.x.arm:active{background:var(--danger);color:#fff;border-radius:3px;font-size:11px;font-weight:700;line-height:1.25;padding:0}
@@ -97,8 +101,8 @@ tfoot td{font-weight:700;font-size:18px}
 .pad .how{margin:-10px -10px 8px;background:none;border-bottom:0;padding-top:8px;padding-bottom:0}
 /* いちばん古い未伝達は、どのタブでも・一覧をどこまで送っても、ここに出したままにする。 */
 .pin{flex:none;border-top:1px solid var(--line)}
-.pin .o{border-bottom:2px solid #c9b24a}
-.pin .o.old{border-bottom-color:#d98f80}
+.pin .o{border-bottom:2px solid #d9dde0}
+.pin .o.old{border-bottom-color:#d9dde0}
 .pin+main{border-top:0}
 .tag{display:inline-block;margin-right:6px;padding:0 6px;border-radius:2px;background:var(--ink);color:#fff;font-size:11px;font-weight:700;line-height:1.6}
 /* 伝達済み・集計・使い方を開いているときは、未伝達の1件を見出しつきの別枠にして、下の内容と切り離す。 */

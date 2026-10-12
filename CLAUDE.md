@@ -41,3 +41,14 @@ node tools/mock.js
 
 http://localhost:8791/ を開く。`/__net?off=1` で電波断、`/__net?off=0` で復帰、`/__dump` で保存内容を表示。
 `RESET_IN=9000 node tools/mock.js` で、9:15 のリセットを「ページを開いて9秒後」に置き換えて試せる。
+
+## 来年版の試作（`next/index.html`）
+
+- 公開先: https://pondsnails.github.io/fuwa-cho/next/ 。今年の版（`index.html`）は触らない
+- データは `/wataame2/{dMMDD}/orders/n{番号}`。今年の版（`/wataame`）とは別の場所
+- 流れ: 番号を軸に `new`（待ち）→ `making`（作っている）→ `ready`（できた）→ `done`（渡した）。ほかに `cancel`
+- 画面は役割ごと: 受付（味を押す・待ちの件数とおよその待ち時間）／作る（待ちを古い順にカードで並べ、手の空いた人が取る）／お渡し（できた注文、券なしの人は一覧から探す）／掲示板（お客さん向け、できた番号を大きく）／集計（売上と取り消した注文）
+- 役割は端末ごとに覚える。`#make` `#board` などをURLに付けても指定できる
+- 今年あった A・B・C を押す作業はない（作る人が画面から自分で取る）
+- モックでの確認: `node tools/mock.js next/index.html`
+- 画面の文言は試作段階の仮のもの。ユーザーの確認がまだ

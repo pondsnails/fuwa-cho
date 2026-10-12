@@ -205,11 +205,10 @@ tfoot td{font-weight:700;font-size:18px}
 .o.w .no{font-size:20px}
 /* 先に作ることにした注文 */
 .o.w .r{gap:6px}
+.hint{padding:9px 14px;font-size:13px;font-weight:600;color:var(--ink);background:#fff8d6;border-bottom:1px solid var(--line)}
+.o.w .vb{font-size:12px;color:var(--muted);padding-right:2px;white-space:nowrap}
 .o.w .mk{width:48px;height:42px}
 .mp.emp .ml{color:var(--muted)}
-.mp.emp{height:44px}
-.mp.emp .ml{font-size:24px}
-.mp.emp .idle{font-size:15px}
 .o.w .ago{font-size:13px;min-width:2.6em;text-align:right;color:var(--danger);font-weight:700;padding-right:4px}
 .o.w .x{height:38px}
 .o.w.old .ago{color:var(--danger);font-weight:700}
@@ -608,10 +607,10 @@ function renderQueue(){
   const cap='<div class="cap capq"><span>待ち '+w.length+'件</span><button data-act="log" data-id="all">注文一覧</button></div>';
   // 下：待ちの列
   // 頼むのは注文の行で。空いている人のボタンだけが出るので、順番を飛ばすときも、その行で押すだけ。
-  put($('#queue'),w.length?cap+w.slice(0,100).map(o=>{
+  put($('#queue'),w.length?cap+(free.length?'':'<div class="hint">全員作っています。「渡した」を押すと頼めます</div>')+w.slice(0,100).map(o=>{
       const min=Math.floor((now-o.createdAt)/60000),late=now-o.createdAt>LATE;
       return '<div class="o w'+(late?' old':'')+'"><span class="no">'+esc(num(o))+'</span><span class="nm">'+esc(fl(o))+'</span><span class="r">'+(min>=10?'<span class="ago">'+min+'分</span>':'')
-        +free.map(m=>'<button class="mk" data-act="assign" data-m="'+m+'" data-id="'+esc(o.id)+'" aria-label="'+esc(num(o))+'番を'+m+'に頼む">'+m+'</button>').join('')+'</span></div>';
+        +(free.length?'<span class="vb">頼む</span>':'')+free.map(m=>'<button class="mk" data-act="assign" data-m="'+m+'" data-id="'+esc(o.id)+'" aria-label="'+esc(num(o))+'番を'+m+'に頼む">'+m+'</button>').join('')+'</span></div>';
     }).join('')
     :cap+'<div class="none">'+(BASE&&!loaded?'読み込み中':'<strong>待っている注文はありません</strong>')+'</div>');
 }
@@ -684,7 +683,7 @@ function renderMine(){
   const LBL={new:'待ち',told:'作っている',done:'渡した',cancel:'取り消した'};
   put($('#mine'),all.length?'<div class="cap">入れた注文（新しい順）　まちがえたら「取消」</div>'+all.map(o=>{
     const off=o.status==='cancel';
-    return '<div class="o'+(off||o.status==='done'?' gone':'')+'"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small><span class="st '+esc(o.status)+'">'+LBL[o.status]+'</span>'+(o.kind==='double'?'ダブル　':'')+hms(o.createdAt)+'</small></span><span class="r">'
+    return '<div class="o'+(off||o.status==='done'?' gone':'')+'"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small><span class="st '+esc(o.status)+'">'+LBL[o.status]+'</span>'+(o.kind==='double'?'ダブル　':'')+hms(o.createdAt)+' に入れた</small></span><span class="r">'
       +(off?'<button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button>'
         :o.status==='done'?''
         :armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">本当に<br>消す</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(num(o))+'番を取り消す">取消</button>')
@@ -832,7 +831,7 @@ document.addEventListener('click',e=>{
     const to=!o?'new':o.status==='done'?'told':o.status==='cancel'?(o.was==='told'?'told':'new'):'new';
     patchOrder(id,{status:to});toast((o?num(o)+'番を':'')+(to==='told'?'作っているところに戻した':'待ちに戻した'));
   }
-  else if(a==='cancel'){armCancel=id;armAt=Date.now();render();setTimeout(()=>{if(armCancel===id){armCancel=null;render()}},3000)}
+  else if(a==='cancel'){armCancel=id;armAt=Date.now();render();setTimeout(()=>{if(armCancel===id){armCancel=null;render()}},5000)}
   else if(a==='cancel2'){
     if(Date.now()-armAt<400)return;
     const o=list().find(x=>x.id===id);armCancel=null;patchOrder(id,{status:'cancel',cancelAt:Date.now(),was:o?o.status:'new'});toast((o?num(o)+'番を':'')+'取り消した');

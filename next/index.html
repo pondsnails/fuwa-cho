@@ -212,7 +212,8 @@ tfoot td{font-weight:700;font-size:18px}
 .o.w{min-height:46px;padding-top:4px;padding-bottom:4px;box-shadow:inset 6px 0 0 #f5c400;background:#fffbe6}
 .o.w.old{box-shadow:inset 6px 0 0 var(--danger);background:#fff0ec}
 .o.w .no{font-size:20px}
-.o.w .ago{font-size:12px;color:var(--muted);padding-right:6px}
+.o.w .ago{font-size:12px;color:var(--muted);padding-right:2px}
+.o.w .x{height:38px}
 .o.w.old .ago{color:var(--danger);font-weight:700}
 #pick,#mine{display:none}
 .app[data-role=pick] #pick{display:block}
@@ -595,7 +596,8 @@ function renderQueue(){
   // 下：待ちの列
   put($('#queue'),w.length?'<div class="cap">待ち '+w.length+'件（古い順）</div>'+w.slice(0,100).map((o,i)=>{
       const min=Math.floor((now-o.createdAt)/60000),late=now-o.createdAt>LATE;
-      return '<div class="o w'+(late?' old':'')+'"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+(i===0||o.kind==='double'?'<small>'+(i===0?'<span class="tag">次に頼む</span>':'')+(o.kind==='double'?'ダブル':'')+'</small>':'')+'</span><span class="ago">'+(min<1?'いま':min+'分')+'</span></div>';
+      return '<div class="o w'+(late?' old':'')+'"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+(i===0||o.kind==='double'?'<small>'+(i===0?'<span class="tag">次に頼む</span>':'')+(o.kind==='double'?'ダブル':'')+'</small>':'')+'</span><span class="r"><span class="ago">'+(min<1?'いま':min+'分')+'</span>'
+        +(armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">本当に<br>消す</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(num(o))+'番を取り消す">取消</button>')+'</span></div>';
     }).join('')
     :'<div class="none">'+(BASE&&!loaded?'読み込み中':'<strong>待っている注文はありません</strong>')+'</div>');
 }

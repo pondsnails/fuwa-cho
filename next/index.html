@@ -150,6 +150,19 @@ main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;oversc
 .tile:active .price,.tile.hit .price,.tile.sel .price,.tile.on .price{color:inherit;opacity:.95}
 .tile.hit .price{font-size:14px;font-weight:700}
 .tile.on .price{padding:3px 10px;border:1px solid #fff;border-radius:3px;font-size:13px;opacity:1}
+/* 味を直す画面。今年の版の「使い方」と同じ出し方（暗くして真ん中）。中の味ボタンは会計と同じもの。 */
+.sheet{position:fixed;top:0;bottom:0;left:0;right:0;z-index:5;display:flex;align-items:center;justify-content:center;padding:20px 16px;background:rgba(22,25,28,.6)}
+.sheet[hidden]{display:none}
+.sheet .box{width:100%;max-width:440px;padding-bottom:12px;background:var(--panel);border-radius:6px;overflow:hidden}
+.sheet header{height:46px;padding:0 6px 0 14px;border-bottom:1px solid var(--line)}
+.sheet .rolebtn{margin:0;height:46px;font-size:14px}
+.sheet .now{margin:0;padding:10px 14px;font-size:13px;color:var(--muted)}
+.sheet .now b{margin-left:6px;font-size:16px;color:var(--ink)}
+.sheet .tiles{padding:0 12px}
+/* 直せる所の目印 */
+.fix{color:var(--blue);font-size:12px;font-weight:400;white-space:nowrap}
+.o .nm[data-act],.card .fl[data-act]{cursor:pointer}
+.o .nm[data-act]:active,.card .fl[data-act]:active{background:rgba(31,169,224,.18)}
 /* 番号の表示は、レジの客面ディスプレイと同じ黒地に白。 */
 .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:6;transform:translateX(-50%);width:calc(100% - 20px);max-width:500px;padding:12px 16px;border-radius:3px;background:#16191c;color:#fff;font-weight:700;font-size:18px;text-align:center;pointer-events:none}
 .app[data-view=take] .toast{bottom:calc(248px + env(safe-area-inset-bottom,0px))}
@@ -191,6 +204,14 @@ tfoot td{font-weight:700;font-size:18px}
   <nav class="seg" id="seg" aria-label="役割の切り替え"></nav>
   <main id="pane"></main>
   <div class="pad" id="pad"><div class="lastline" id="lastline"></div><div class="tiles" id="tiles"></div></div>
+</div>
+<!-- 味を直す：まわりを暗くして真ん中に出す。番号はそのままで、味だけ選び直す。 -->
+<div class="sheet" id="edit" role="dialog" aria-label="味を直す" hidden>
+  <div class="box">
+    <header><h1 id="editTitle"></h1><button class="rolebtn" data-act="editOff">やめる</button></header>
+    <p class="now" id="editNow"></p>
+    <div class="tiles" id="editTiles"></div>
+  </div>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
@@ -237,7 +258,7 @@ const dayLabel=()=>(new Date().getMonth()+1)+'/'+new Date().getDate();
 
 // server: 保存済みの注文（id→注文）。pend: まだ送れていない変更（id→差分）。
 let server={}, pend={}, online=false, loaded=false, es=null, lastBeat=0, t0=Date.now();
-let role=null, view='take', flash={}, stuck=false, pendAt=0, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
+let role=null, view='take', editing=null, flash={}, stuck=false, pendAt=0, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
 
 function loadLocal(){try{const x=JSON.parse(localStorage.getItem(LS)||'null');if(x){if(!BASE)server=x.server||{};pend=x.pend||{}}}catch(e){}}
 function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(BASE?{pend}:{server,pend:{}}))}catch(e){}}
@@ -369,7 +390,7 @@ function viewTake(now){
   if(!all.length)return head+'<div class="none">'+(BASE&&!loaded?'読み込み中':'味を押すと、番号がついてここに出ます')+'</div>';
   return head+'<div class="cap">入れた注文（新しい順）</div>'+all.slice(0,60).map(o=>
     '<div class="o"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small><span class="st '+esc(o.status)+'">'+esc(STATUS[o.status]||'')+(o.status==='told'&&o.maker?' '+esc(o.maker):'')+'</span>'+(o.kind==='double'?'ダブル　':'')+hms(o.createdAt)+'</small></span><span class="r">'
-      +(o.status==='new'||o.status==='told'?cancelBtn(o):'')+'</span></div>').join('');
+      +(o.status==='new'||o.status==='told'?'<button class="x fix" data-act="edit" data-id="'+esc(o.id)+'" aria-label="'+esc(o.no)+'番の味を直す">直す</button>'+cancelBtn(o):'')+'</span></div>').join('');
 }
 const cancelBtn=o=>armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">本当に<br>消す</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(o.no)+'番を取り消す">取消</button>';
 // 伝える：まだ伝えていない注文を古い順に。作る人に声をかけたら、その相手の A・B・C を押す。
@@ -380,13 +401,13 @@ function viewTell(now){
   return how+w.slice(0,80).map((o,i)=>{
     if(flash[o.id])return '<div class="o sent'+(flash[o.id].out?' out':'')+'"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>✓ '+esc(flash[o.id].m)+' に伝えた</small></span><span class="r">'+MAKERS.map(m=>'<span class="mk'+(m===flash[o.id].m?' got':'')+'">'+m+'</span>').join('')+'<span class="x"></span></span></div>';
     const late=now-o.createdAt>LATE;
-    return '<div class="o wait'+(late?' old':'')+'"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small'+(late?' class="late"':'')+'>'+(o.kind==='double'?'ダブル　':'')+(i===0&&w.length>1?'<span class="tag">次に伝える</span>':'')+(late?Math.floor((now-o.createdAt)/60000)+'分前':hm(o.createdAt))+'</small></span><span class="r">'
+    return '<div class="o wait'+(late?' old':'')+'"><span class="no">'+esc(o.no)+'</span><span class="nm" data-act="edit" data-id="'+esc(o.id)+'">'+dots(o)+esc(fl(o))+' <span class="fix">直す</span><small'+(late?' class="late"':'')+'>'+(o.kind==='double'?'ダブル　':'')+(i===0&&w.length>1?'<span class="tag">次に伝える</span>':'')+(late?Math.floor((now-o.createdAt)/60000)+'分前':hm(o.createdAt))+'</small></span><span class="r">'
       +MAKERS.map(m=>'<button class="mk" data-act="told" data-m="'+m+'" data-id="'+esc(o.id)+'" aria-label="'+m+'に伝えた">'+m+'</button>').join('')+cancelBtn(o)+'</span></div>';
   }).join('');
 }
 function card(o,now){
   return '<div class="card told"><div class="top"><span class="no">'+esc(o.no)+'</span><span class="who">'+esc(o.maker||'?')+'</span></div>'
-    +'<div class="fl">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+esc(o.maker||'?')+(now-(o.toldAt||o.createdAt)<60000?' に伝えたところ':' に伝えて '+Math.floor((now-(o.toldAt||o.createdAt))/60000)+'分')+'</small></div>'
+    +'<div class="fl" data-act="edit" data-id="'+esc(o.id)+'">'+dots(o)+esc(fl(o))+' <span class="fix">直す</span><small>'+(o.kind==='double'?'ダブル　':'')+esc(o.maker||'?')+(now-(o.toldAt||o.createdAt)<60000?' に伝えたところ':' に伝えて '+Math.floor((now-(o.toldAt||o.createdAt))/60000)+'分')+'</small></div>'
     +'<div class="acts">'+cancelBtn(o)+'<button class="back" data-act="set" data-to="new" data-id="'+esc(o.id)+'">戻す</button><button class="go" data-act="set" data-to="done" data-id="'+esc(o.id)+'">渡した</button></div></div>';
 }
 // お渡し：作る人に伝えてあって、まだ渡していない注文。券の番号を見て、味を確かめて渡す。券をなくした人は、味と頃合いからここで探す。
@@ -463,6 +484,31 @@ function take(kind,flavors){
     render();if(ok&&view==='take')$('#pane').scrollTop=0;
   });
 }
+// 味を直す。番号はそのまま（お客さんの券と合ったままにするため）。
+// すでに作る人に伝えてあった注文は「まだ伝えてない」に戻す。作る人は古い味のつもりでいるので、もう一度伝えてもらう。
+function renderEdit(){
+  const o=editing&&list().find(x=>x.id===editing.id);
+  $('#edit').hidden=!o;if(!o){editing=null;return}
+  const d=editing.dbl;
+  $('#editTitle').textContent=o.no+'番の味を直す';
+  put($('#editNow'),'いまの味<b>'+esc(label(o))+'</b>');
+  put($('#editTiles'),FLAVORS.map(f=>{
+    const first=d&&d[0]===f.id;
+    return '<button class="tile'+(first?' sel':'')+'" style="--c:var('+f.c+')" data-act="epick" data-id="'+f.id+'"><span class="name">'+f.name+'</span>'+(first?'<span class="price">1つ目</span>':'')+'</button>';
+  }).join('')+(d
+    ?'<button class="tile wide on" data-act="edbl"><span class="name">ダブル　'+(d.length?esc(F[d[0]].name)+'＋2つ目を選ぶ':'1つ目を選ぶ')+'</span><span class="price">やめる</span></button>'
+    :'<button class="tile wide" data-act="edbl"><span class="name">ダブルにする</span></button>'));
+}
+function applyEdit(kind,flavors){
+  const o=list().find(x=>x.id===editing.id);editing=null;renderEdit();if(!o)return;
+  const p={kind,flavors,total:kind==='double'?DOUBLE:F[flavors[0]].price},again=o.status==='told';
+  if(again){p.status='new';p.maker=null}
+  const to=(kind==='double'?'ダブル ':'')+flavors.map(f=>F[f].name).join('＋');
+  if(navigator.vibrate)navigator.vibrate(30);
+  toast(o.no+'番を '+to+' に直した'+(again?'。もう一度伝えてください':''),again?4000:2400);
+  patchOrder(o.id,p);
+}
+
 // 段階を進める・戻す。押した時刻も一緒に残す（待ち時間の目安と、あとの振り返りに使う）。
 const STAMP={told:'toldAt',done:'doneAt'};
 const SAID={done:'渡した',new:'「まだ伝えてない」に戻した',told:'「伝えた」に戻した'};
@@ -485,6 +531,7 @@ function told(id,m){
 }
 
 document.addEventListener('click',e=>{
+  if(e.target.id==='edit'){editing=null;renderEdit();return}
   const b=e.target.closest('[data-act]');if(!b||b.disabled)return;
   const a=b.dataset.act,id=b.dataset.id;
   if(a==='pick'){
@@ -496,6 +543,10 @@ document.addEventListener('click',e=>{
   else if(a==='view'){view=id;render();$('#pane').scrollTop=0}
   else if(a==='role'){setRole(id);render();$('#pane').scrollTop=0}
   else if(a==='roles'){setRole(null);dbl=null;render();$('#pane').scrollTop=0}
+  else if(a==='edit'){const o=list().find(x=>x.id===id);if(o&&(o.status==='new'||o.status==='told')){editing={id,dbl:null};renderEdit()}}
+  else if(a==='editOff'){editing=null;renderEdit()}
+  else if(a==='edbl'){editing.dbl=editing.dbl?null:[];renderEdit()}
+  else if(a==='epick'){const d=editing.dbl;if(d){d.push(id);if(d.length===2)applyEdit('double',d.slice());else renderEdit()}else applyEdit('single',[id])}
   else if(a==='set')setStatus(id,b.dataset.to);
   else if(a==='told')told(id,b.dataset.m);
   else if(a==='cancel'){armCancel=id;render();setTimeout(()=>{if(armCancel===id){armCancel=null;render()}},3000)}

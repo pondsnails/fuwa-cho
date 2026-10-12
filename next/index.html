@@ -38,13 +38,6 @@ header .helpbtn{padding:0 6px}
 .alert{position:absolute;top:0;left:0;right:0;z-index:4;display:flex;align-items:center;justify-content:center;min-height:calc(40px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 14px 0;background:var(--danger);color:#fff;font-size:13px;font-weight:700;text-align:center}
 .alert[hidden]{display:none}
 
-.seg{flex:none;display:flex;margin:0 12px 10px;border:1px solid var(--blue);border-radius:4px;overflow:hidden}
-.seg button{flex:1 1 auto;padding:0 4px;height:36px;font-size:12px;color:var(--blue);white-space:nowrap}
-.seg button+button{border-left:1px solid var(--blue)}
-.seg button:active{background:#d9eff9}
-.seg button.on{background:var(--blue);color:#fff}
-.seg b{margin-left:4px;font-variant-numeric:tabular-nums}
-.seg b.hot{display:inline-block;min-width:22px;padding:1px 6px;border-radius:11px;background:var(--danger);color:#fff}
 
 main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--bg);border-top:1px solid var(--line)}
 .o{max-height:120px;display:grid;grid-template-columns:2.5em minmax(0,1fr) auto;gap:6px;align-items:center;min-height:60px;padding:8px 8px 8px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
@@ -175,7 +168,7 @@ tfoot td{font-weight:700;font-size:18px}
 /* 役割で画面を分ける。会計は「味を押す」と自分が入れた注文だけ。オーダー管理は一覧だけで、味のボタンは出さない。 */
 /* オーダー管理の上半分：A・B・C の枠。位置は動かない。作っている人には「渡した」、空いた人には「次を頼む」。 */
 .board{display:none}
-.app[data-role=order][data-tab=queue] .board{flex:none;display:block;background:var(--panel);border-top:1px solid var(--line);border-bottom:2px solid var(--ink)}
+.app[data-role=order] .board{flex:none;display:block;background:var(--panel);border-top:1px solid var(--line);border-bottom:2px solid var(--ink)}
 .mp{display:grid;grid-template-columns:46px minmax(0,1fr) 148px;gap:6px;align-items:center;height:78px;padding:0 8px 0 0;border-bottom:1px solid var(--line)}
 .mp:last-child{border-bottom:0}
 /* 作っている人の枠：右端に小さく「待ちに戻す」。頼む相手をまちがえたとき用で、ふだんは押さない。 */
@@ -215,11 +208,18 @@ tfoot td{font-weight:700;font-size:18px}
 .o.w .ago{font-size:12px;color:var(--muted);padding-right:2px}
 .o.w .x{height:38px}
 .o.w.old .ago{color:var(--danger);font-weight:700}
+/* オーダー管理のいちばん下の帯。渡した注文と取り消した注文は、ここから開く。主役は上の割り振りなので、小さく置く。 */
+.more{display:none}
+.app[data-role=order] .more{flex:none;display:flex;background:var(--strip);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.more button{flex:1;height:44px;font-size:13px;color:var(--blue)}
+.more button+button{border-left:1px solid var(--line)}
+.more button:active{background:#d9eff9}
+.more b{margin-left:6px;color:var(--ink);font-variant-numeric:tabular-nums}
 #pick,#mine{display:none}
 .app[data-role=pick] #pick{display:block}
 .app[data-role=cash] #mine{display:block}
-.app[data-role=pick] .seg,.app[data-role=pick] .board,.app[data-role=pick] .pad,.app[data-role=pick] #queue,.app[data-role=pick] #done,.app[data-role=pick] #gone,.app[data-role=pick] #sales{display:none}
-.app[data-role=cash] .seg,.app[data-role=cash] .board,.app[data-role=cash] #queue,.app[data-role=cash] #done,.app[data-role=cash] #gone,.app[data-role=cash] #sales{display:none}
+.app[data-role=pick] .board,.app[data-role=pick] .pad,.app[data-role=pick] #queue,.app[data-role=pick] #sales{display:none}
+.app[data-role=cash] .board,.app[data-role=cash] #queue,.app[data-role=cash] #sales{display:none}
 .app[data-role=order] .pad{display:none}
 /* 役の切り替え。見出しにいつも出ていて、押せばすぐ切り替わる（選び直しの画面をはさまない）。 */
 .rsw{display:flex;margin-left:8px;border:1px solid var(--blue);border-radius:4px;overflow:hidden}
@@ -262,10 +262,6 @@ header .helpbtn{margin-left:2px}
   h1 span{display:none}
   h1{white-space:nowrap}
   .rsw button{padding:0 6px}
-  .seg{margin-left:8px;margin-right:8px}
-  .seg button{padding:0 1px;font-size:11px;letter-spacing:-.02em}
-  .seg b{margin-left:2px}
-  .seg b.hot{min-width:18px;padding:1px 4px}
 }
 /* 背の低い画面（小さいスマホ、アドレスバーが出ているとき）：一覧が1行も残らなくなるので、下の味ボタンを詰める。 */
 @media (max-height:640px){
@@ -284,10 +280,6 @@ main{min-height:64px}
   .app>header{grid-column:1 / -1;grid-row:1;position:relative;height:48px;border-bottom:1px solid var(--line)}
   .app>header h1{position:absolute;left:0;right:0;font-size:16px;text-align:center;pointer-events:none}
   .app>.alert{min-height:48px;font-size:15px}
-  .seg{grid-column:1;grid-row:3;margin:0;border:0;border-bottom:1px solid var(--line);border-radius:0}
-  .seg button{height:48px;font-size:14px;color:var(--muted);border-bottom:3px solid transparent}
-  .seg button+button{border-left:0}
-  .seg button.on{background:none;color:var(--blue);font-weight:700;border-bottom-color:var(--blue)}
   .pin{grid-column:1;grid-row:4;border-top:0}
   .app[data-role=order],.app[data-role=pick]{grid-template-columns:minmax(0,1fr)}
   /* 広い画面のオーダー管理は、分割せずに縦に並べる。 */
@@ -343,15 +335,13 @@ main{min-height:64px}
 <div class="app" id="app" data-role="pick">
   <header><h1>わたあめ帳<span id="day"></span></h1><span class="mode" id="mode"></span><nav class="rsw" id="rsw" aria-label="役の切り替え" hidden></nav><button class="helpbtn" id="sumbtn" data-act="sum">集計</button><button class="helpbtn" id="helpbtn" data-act="help">使い方</button></header>
   <div class="alert" id="alert" role="alert" hidden></div>
-  <nav class="seg" id="seg" aria-label="表示の切り替え"></nav>
   <div class="board" id="board"></div>
   <main id="pane">
     <div id="pick"></div>
     <div id="mine"></div>
     <div id="queue"></div>
-    <div id="done" hidden></div>
-    <div id="gone" hidden></div>
   </main>
+  <nav class="more" id="more" aria-label="渡した注文と取り消した注文"></nav>
 
   <div class="pad">
     <div class="how"><b>1</b>注文された味を押す</div>
@@ -374,6 +364,15 @@ main{min-height:64px}
 </div>
 
 <!-- 使い方は、まわりを暗くして真ん中に出す。暗い所を押しても閉じる。見出しの帯と「とじる」は注文の画面と同じ部品。 -->
+<!-- 渡した注文／取り消した注文。ふだんは見ない。押しまちがいを戻すときだけ、下の帯から開く。 -->
+<div class="sheet" id="log" role="dialog" aria-label="渡した注文・取り消した注文" hidden>
+  <div class="box">
+    <header><h1 id="logTitle"></h1><button class="helpbtn" data-act="logOff">とじる</button></header>
+    <div class="body"><div id="done"></div><div id="gone"></div></div>
+    <div class="foot"><button class="back" data-act="logOff">とじる</button></div>
+  </div>
+</div>
+
 <div class="sheet" id="sum" role="dialog" aria-label="集計" hidden>
   <div class="box">
     <header><h1>集計</h1><button class="helpbtn" data-act="sumOff">とじる</button></header>
@@ -424,7 +423,7 @@ const LATE=5*60000; // これより長く未伝達の注文は、時刻を赤い
 
 // server: 保存済みの注文（id→注文）。pend: まだ送れていない変更（id→差分）。
 let server={}, pend={}, online=false, loaded=false, es=null, lastBeat=0, t0=Date.now();
-let role='pick', ask=null, lastOrder=null, tab='queue', tabAt=0, armAt=0, dblAt=0, stuck=false, pendAt=0, flash={}, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
+let log=null, role='pick', ask=null, lastOrder=null, tab='queue', tabAt=0, armAt=0, dblAt=0, stuck=false, pendAt=0, flash={}, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
 
 function loadLocal(){try{const x=JSON.parse(localStorage.getItem(LS)||'null');if(x){if(!BASE)server=x.server||{};pend=x.pend||{}}}catch(e){}}
 function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(BASE?{pend}:{server,pend:{}}))}catch(e){}}
@@ -606,7 +605,7 @@ function renderDone(){
   const all=list();
   // 渡した注文の履歴（新しい順）。押しまちがえたら、ここで戻す。
   const g=all.filter(o=>o.status==='done').sort((a,b)=>(b.doneAt||0)-(a.doneAt||0));
-  if(tab==='done')moved('done',g.slice(0,200).map(o=>o.id),false);
+  if(log==='done')moved('done',g.slice(0,200).map(o=>o.id),false);
   put($('#done'),g.length?'<div class="cap">渡した注文（新しい順）　まちがえたら「戻す」</div>'+g.slice(0,200).map(o=>'<div class="o"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+esc(o.maker||'?')+'　'+hm(o.doneAt)+' に渡した</small></span><span class="r"><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button></span></div>').join('')
     :'<div class="none"><strong>まだ渡した注文はありません</strong></div>');
   // 取り消した注文は専用のタブに残す。番号が飛んで見える理由が分かり、まちがって消したときに戻せる。
@@ -634,10 +633,11 @@ const HELP='<p class="lead">やることは3つだけ</p>'
   +'<div><dt>味を押しまちがえた</dt><dd>「取消」を2回</dd></div>'
   +'<div><dt>それ以外</dt><dd>上の「取消」か「渡した」を開いて「戻す」</dd></div>'
   +'</dl>';
-function renderTabs(nDone,total){
-  const nNew=list().filter(o=>o.status==='new').length;
-  put($('#seg'),[['queue','割り振り',nNew],['done','渡した',nDone],['gone','取消',list().filter(o=>o.status==='cancel').length]].map(t=>'<button data-act="tab" data-id="'+t[0]+'"'+(tab===t[0]?' class="on" aria-current="true"':'')+'>'+t[1]+'<b'+(t[0]==='queue'&&nNew?' class="hot"':'')+'>'+t[2]+'</b></button>').join(''));
-  ['queue','done','gone'].forEach(k=>{$('#'+k).hidden=tab!==k});
+function renderTabs(nDone){
+  const nGone=list().filter(o=>o.status==='cancel').length;
+  put($('#more'),'<button data-act="log" data-id="done">渡した注文<b>'+nDone+'</b></button><button data-act="log" data-id="gone">取り消した注文<b>'+nGone+'</b></button>');
+  $('#done').hidden=log!=='done';$('#gone').hidden=log!=='gone';
+  $('#logTitle').textContent=log==='gone'?'取り消した注文':'渡した注文';
 }
 // つながっている間は右上に小さく、問題があるときだけ赤い帯で知らせる。
 function renderMode(){
@@ -655,7 +655,7 @@ function renderMode(){
 }
 const ROLES=[['cash','会計','注文を聞いて、味と札の番号を押す人'],['order','オーダー管理','作る人に伝えて、できたものを渡す人']];
 function setRole(r){
-  role=ROLES.some(x=>x[0]===r)?r:'pick';dbl=null;ask=null;armCancel=null;
+  role=ROLES.some(x=>x[0]===r)?r:'pick';log=null;const lg=document.getElementById('log');if(lg)lg.hidden=true;dbl=null;ask=null;armCancel=null;
   try{if(role==='pick')localStorage.removeItem('wataame-cho-next-role');else localStorage.setItem('wataame-cho-next-role',role);history.replaceState(null,'',role==='pick'?location.pathname+location.search:'#'+role)}catch(e){}
 }
 // 最初の画面：どちらの役で使うかを選ぶ。選んだあとは、その役の画面だけになる。
@@ -684,7 +684,7 @@ function render(){
   renderTiles();renderQueue();renderTabs(renderDone(),renderSales());renderMode();renderLast();renderLines();
   if(role==='cash')renderMine();
   // 黒い表示は、味ボタンのすぐ上に出す（オーダー管理では画面の下）。
-  app.style.setProperty('--padh',(role==='cash'&&innerWidth<768?$('.pad').offsetHeight:0)+'px');
+  app.style.setProperty('--padh',(role==='cash'&&innerWidth<768?$('.pad').offsetHeight:role==='order'?$('#more').offsetHeight:0)+'px');
 }
 // 広い画面の右下に出したままにする表示：直前に入れた注文と、今日の件数・売上。
 function renderLast(){
@@ -757,11 +757,12 @@ function take(kind,flavors,tag){
 
 document.addEventListener('click',e=>{
   if(e.target.id==='help'||e.target.id==='sum'){e.target.hidden=true;return}
+  if(e.target.id==='log'){log=null;e.target.hidden=true;return}
   if(e.target.id==='ask'){ask=null;renderAsk();return}
   const b=e.target.closest('[data-act]');if(!b||b.disabled)return;
   const a=b.dataset.act;let id=b.dataset.id,mk=b.dataset.m;
   // 行が動いた直後：伝える・渡したは、動く前にその位置にあった注文として扱う。戻す・取消は安全側に倒して受け付けない。
-  if(role==='order'&&tab==='done'&&Date.now()<guardUntil&&(a==='told'||a==='give'||a==='undo'||a==='cancel'||a==='cancel2')){
+  if(role==='order'&&log==='done'&&Date.now()<guardUntil&&(a==='told'||a==='give'||a==='undo'||a==='cancel'||a==='cancel2')){
     const hit=(a==='told'||a==='give')&&snap.find(i=>i.a===a&&e.clientX>=i.l&&e.clientX<=i.r&&e.clientY>=i.t&&e.clientY<=i.b);
     const o=hit&&list().find(x=>x.id===hit.id);
     if(!o||o.status!==(a==='told'?'new':'told')||flash[o.id])return;
@@ -780,6 +781,8 @@ document.addEventListener('click',e=>{
   else if(a==='helpOff')$('#help').hidden=true;
   else if(a==='sum'){render();$('#sum').hidden=false}
   else if(a==='sumOff')$('#sum').hidden=true;
+  else if(a==='log'){log=id;render();$('#log').hidden=false;$('#log .body').scrollTop=0}
+  else if(a==='logOff'){log=null;$('#log').hidden=true}
   else if(a==='dbl'){dbl=dbl?null:[];dblAt=Date.now();renderTiles()}
   else if(a==='tab'){tab=id;tabAt=Date.now();sig.done='';render();$('#pane').scrollTop=0}
   else if(a==='give'){

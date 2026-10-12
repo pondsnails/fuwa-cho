@@ -170,6 +170,27 @@ tfoot td{font-weight:700;font-size:18px}
 .lastline em{font-style:normal;font-size:15px;font-variant-numeric:tabular-nums}
 .lastline em.fresh{color:var(--blue);font-weight:700}
 /* 役割で画面を分ける。会計は「味を押す」と自分が入れた注文だけ。オーダー管理は一覧だけで、味のボタンは出さない。 */
+/* オーダー管理の下半分：A・B・C の列。いまそれぞれが頼まれている注文。渡したら、その注文を押す。 */
+.cols{display:none}
+.app[data-role=order][data-tab=queue] .cols{flex:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));height:42%;background:var(--panel);border-top:2px solid var(--ink)}
+.col{display:flex;flex-direction:column;min-height:0;border-left:1px solid var(--line)}
+.col:first-child{border-left:0}
+.col h2{flex:none;display:flex;align-items:baseline;gap:6px;margin:0;padding:5px 8px 4px;font-size:22px;font-weight:700;line-height:1.1;color:var(--blue);background:var(--strip);border-bottom:1px solid var(--line)}
+.col h2 small{font-size:11px;font-weight:400;color:var(--muted)}
+.col .jobs{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.col p{margin:0;padding:12px 8px;font-size:12px;color:var(--muted)}
+.job{display:block;width:100%;min-height:56px;padding:6px 8px 7px;text-align:left;border-bottom:1px solid var(--line)}
+.job:active{background:var(--blue);color:#fff}
+.job b{display:block;font-size:22px;line-height:1.15;font-variant-numeric:tabular-nums}
+.job span{display:block;font-size:12px;font-weight:600;overflow-wrap:anywhere}
+.job .sq{width:8px;height:8px;margin-right:3px}
+.job small{display:block;font-size:10px;color:var(--muted)}
+.job small.late{color:var(--danger);font-weight:700}
+.job:active small{color:inherit}
+/* 渡した直後：少しのあいだ灰色で残す。まちがえて押したら、もう一度押すと戻る。 */
+.job.gave{background:var(--bg);color:var(--muted)}
+.job.gave b{font-weight:400;text-decoration:line-through}
+.job.gave small{color:var(--blue);font-size:11px}
 #pick,#mine{display:none}
 .app[data-role=pick] #pick{display:block}
 .app[data-role=cash] #mine{display:block}
@@ -237,6 +258,12 @@ main{min-height:64px}
   .seg button.on{background:none;color:var(--blue);font-weight:700;border-bottom-color:var(--blue)}
   .pin{grid-column:1;grid-row:4;border-top:0}
   .app[data-role=order],.app[data-role=pick]{grid-template-columns:minmax(0,1fr)}
+  .app[data-role=order][data-tab=queue]{grid-template-rows:auto auto auto auto minmax(0,1fr) 42%}
+  .app[data-role=order][data-tab=queue] .cols{grid-column:1;grid-row:6;height:auto}
+  .job b{font-size:28px}
+  .job span{font-size:15px}
+  .job small{font-size:12px}
+  .col h2{font-size:26px}
   .app[data-role=order] main,.app[data-role=pick] main{grid-column:1}
   main{grid-column:1;grid-row:5}
   .pad{grid-column:2;grid-row:3 / span 3;display:flex;flex-direction:column;padding:16px;background:var(--bg);border-top:0;border-left:1px solid var(--line)}
@@ -289,6 +316,7 @@ main{min-height:64px}
     <div id="gone" hidden></div>
     <div id="sales" hidden></div>
   </main>
+  <div class="cols" id="cols"></div>
   <div class="pad">
     <div class="how"><b>1</b>注文された味を押す</div>
     <div class="lines"><div class="lastline" id="lastline"></div></div>
@@ -461,7 +489,7 @@ function moved(key,ids,appendOnly){
   guardUntil=Date.now()+450;
   // 動く直前の、ボタンの位置と注文の対応を覚えておく。直後のタップは「動く前にそこにあった注文」を押したものとして扱う。
   // 人は0.3秒ほど前に見た位置を狙って押すので、こうすると狙った注文に当たる。ただ無視すると、続けて押したタップが抜ける。
-  snap=[...document.querySelectorAll('#pin [data-act=told],#queue [data-act=told],#done [data-act=give]')].map(el=>{const r=el.getBoundingClientRect();return {a:el.dataset.act,id:el.dataset.id,m:el.dataset.m,l:r.left,t:r.top,r:r.right,b:r.bottom}});
+  snap=[...document.querySelectorAll('#pin [data-act=told],#queue [data-act=told],#done [data-act=give],#cols [data-act=give]')].map(el=>{const r=el.getBoundingClientRect();return {a:el.dataset.act,id:el.dataset.id,m:el.dataset.m,l:r.left,t:r.top,r:r.right,b:r.bottom}});
 }
 // 中身が変わったときだけ書き換える。他の端末の更新で、押している最中のボタンが作り直されてタップが消えるのを防ぐ。
 function put(el,html){if(el.__h!==html){el.__h=html;el.innerHTML=html}}
@@ -550,7 +578,7 @@ const HELP='<p class="lead">やることは3つだけ</p>'
   +'</dl>';
 function renderTabs(nDone,total){
   const nNew=list().filter(o=>o.status==='new').length;
-  put($('#seg'),[['queue','まだ伝えてない',nNew],['done','まだ渡してない',nDone],['gone','取消',list().filter(o=>o.status==='cancel').length],['sales','集計','']].map(t=>'<button data-act="tab" data-id="'+t[0]+'"'+(tab===t[0]?' class="on" aria-current="true"':'')+'>'+t[1]+'<b'+(t[0]==='queue'&&nNew?' class="hot"':'')+'>'+t[2]+'</b></button>').join(''));
+  put($('#seg'),[['queue','割り振り',nNew],['done','まだ渡してない',nDone],['gone','取消',list().filter(o=>o.status==='cancel').length],['sales','集計','']].map(t=>'<button data-act="tab" data-id="'+t[0]+'"'+(tab===t[0]?' class="on" aria-current="true"':'')+'>'+t[1]+'<b'+(t[0]==='queue'&&nNew?' class="hot"':'')+'>'+t[2]+'</b></button>').join(''));
   ['queue','done','gone','sales'].forEach(k=>{$('#'+k).hidden=tab!==k});
 }
 // つながっている間は右上に小さく、問題があるときだけ赤い帯で知らせる。
@@ -589,15 +617,32 @@ function renderMine(){
       +'</span></div>';
   }).join(''):'<div class="none">'+(BASE&&!loaded?'読み込み中':'<strong>まだ注文はありません</strong>札を1枚取って、味を押してください')+'</div>');
 }
+// 渡した直後の注文（id→押した時刻）。2.5秒は列に残して、押しまちがいを戻せるようにする。
+const gave={};
+function renderCols(){
+  if(role!=='order'||tab!=='queue')return;
+  const now=Date.now(),all=list();
+  put($('#cols'),['A','B','C'].map(m=>{
+    const mine=all.filter(o=>o.maker===m&&!flash[o.id]&&(o.status==='told'||(o.status==='done'&&gave[o.id]&&now-gave[o.id]<2500))).sort((a,b)=>(a.toldAt||0)-(b.toldAt||0));
+    moved('col'+m,mine.map(o=>o.id),true);
+    const n=mine.filter(o=>o.status==='told').length;
+    return '<div class="col"><h2>'+m+'<small>'+n+'件</small></h2><div class="jobs">'+(mine.length?mine.map(o=>{
+      if(o.status==='done')return '<button class="job gave" data-act="ungive" data-id="'+esc(o.id)+'"><b>'+esc(num(o))+'</b><span>'+esc(fl(o))+'</span><small>渡した　押すと戻す</small></button>';
+      const min=Math.floor((now-(o.toldAt||now))/60000);
+      return '<button class="job" data-act="give" data-id="'+esc(o.id)+'" aria-label="'+esc(num(o))+'番を渡した"><b>'+esc(num(o))+'</b><span>'+dots(o)+esc(fl(o))+'</span><small'+(min>=15?' class="late"':'')+'>'+(min<1?'いま':min+'分')+'</small></button>';
+    }).join(''):'<p>なし</p>')+'</div></div>';
+  }).join(''));
+}
 function render(){
-  const app=$('#app');app.dataset.role=role;
+  const app=$('#app');app.dataset.role=role;app.dataset.tab=tab;
   const rb=$('#rolebtn'),r=ROLES.find(x=>x[0]===role);rb.hidden=!r;if(r)put(rb,r[1]+'<small>変える</small>');
   $('#helpbtn').hidden=!r;
   if(role==='pick')renderPick();
   renderTiles();renderQueue();renderTabs(renderDone(),renderSales());renderMode();renderLast();renderLines();
   if(role==='cash')renderMine();
+  renderCols();
   // 黒い表示は、味ボタンのすぐ上に出す（オーダー管理では画面の下）。
-  app.style.setProperty('--padh',(role==='cash'&&innerWidth<768?$('.pad').offsetHeight:0)+'px');
+  app.style.setProperty('--padh',(role==='cash'&&innerWidth<768?$('.pad').offsetHeight:role==='order'&&tab==='queue'?$('#cols').offsetHeight:0)+'px');
 }
 // 広い画面の右下に出したままにする表示：直前に入れた注文と、今日の件数・売上。
 function renderLast(){
@@ -683,13 +728,18 @@ document.addEventListener('click',e=>{
   else if(a==='helpOff')$('#help').hidden=true;
   else if(a==='dbl'){dbl=dbl?null:[];dblAt=Date.now();renderTiles()}
   else if(a==='tab'){tab=id;tabAt=Date.now();sig.done='';render();$('#pane').scrollTop=0}
-  else if(a==='give'){const o=list().find(x=>x.id===id);if(navigator.vibrate)navigator.vibrate(30);patchOrder(id,{status:'done',doneAt:Date.now()});toast((o?num(o)+'番　':'')+'渡した')}
+  else if(a==='give'){
+    const o=list().find(x=>x.id===id);if(navigator.vibrate)navigator.vibrate(30);
+    gave[id]=Date.now();setTimeout(()=>{if(gave[id]&&Date.now()-gave[id]>=2400){delete gave[id];render()}},2600);
+    patchOrder(id,{status:'done',doneAt:Date.now()});toast((o?num(o)+'番　':'')+'渡した');
+  }
+  else if(a==='ungive'){const o=list().find(x=>x.id===id);delete gave[id];patchOrder(id,{status:'told'});toast((o?num(o)+'番を':'')+'「まだ渡してない」に戻した')}
   else if(a==='told'){
     // 押した行をしばらく青く残して、誰に伝えたかを見せてから伝達済みへ送る。
     const m=mk,o=list().find(x=>x.id===id);
     const f=flash[id]={m,out:false};
     setTimeout(()=>{if(flash[id]===f){f.out=true;renderQueue()}},900);
-    setTimeout(()=>{if(flash[id]===f){delete flash[id];renderQueue()}},1120);
+    setTimeout(()=>{if(flash[id]===f){delete flash[id];render()}},1120);
     if(navigator.vibrate)navigator.vibrate(40);
     toast((o?num(o)+'番　':'')+m+' に伝えた');
     patchOrder(id,{status:'told',maker:m,toldAt:Date.now()});
@@ -712,7 +762,7 @@ function rollover(){
   if(dayKey()===DAY)return false;
   if(es){es.close();es=null}
   DAY=dayKey();BASE=root(DAY);LS='wataame-cho-next-'+DAY;
-  ask=null;lastOrder=null;server={};pend={};flash={};pendT={};doneT={};dbl=null;armCancel=null;loaded=false;online=false;stuck=false;pendAt=0;t0=Date.now();tab='queue';
+  ask=null;lastOrder=null;Object.keys(gave).forEach(k=>delete gave[k]);server={};pend={};flash={};pendT={};doneT={};dbl=null;armCancel=null;loaded=false;online=false;stuck=false;pendAt=0;t0=Date.now();tab='queue';
   loadLocal();if(BASE)connect();render();
   toast('番号をリセットしました。1番から',4000);
   return true;

@@ -47,10 +47,10 @@ main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;oversc
 .sq{display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:2px}
 
 /* 待ちの件数と、およその待ち時間。受付でお客さんに伝える数字なので大きく出す。 */
-.wait{display:flex;background:var(--panel);border-bottom:1px solid var(--line)}
-.wait span{flex:1;padding:8px 0 9px;text-align:center;font-size:11px;color:var(--muted)}
-.wait span+span{border-left:1px solid var(--line)}
-.wait b{display:block;font-size:22px;font-weight:600;line-height:1.2;color:var(--ink);font-variant-numeric:tabular-nums}
+.kpi{display:flex;background:var(--panel);border-bottom:1px solid var(--line)}
+.kpi span{flex:1;padding:8px 0 9px;text-align:center;font-size:11px;color:var(--muted)}
+.kpi span+span{border-left:1px solid var(--line)}
+.kpi b{display:block;font-size:22px;font-weight:600;line-height:1.2;color:var(--ink);font-variant-numeric:tabular-nums}
 
 /* 一覧の行（受付の履歴、取り消した注文など） */
 .o{display:grid;grid-template-columns:2.4em minmax(0,1fr) auto;gap:6px;align-items:center;min-height:56px;padding:6px 8px 6px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
@@ -63,24 +63,41 @@ main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;oversc
 .o.gone .sq{opacity:.45}
 .st{display:inline-block;margin-right:6px;padding:0 6px;border-radius:2px;font-size:11px;font-weight:700;line-height:1.6;background:var(--line);color:var(--ink)}
 .st.new{background:var(--wait)}
-.st.making{background:var(--blue);color:#fff}
-.st.ready{background:var(--ink);color:#fff}
+.st.told{background:var(--blue);color:#fff}
 .x{display:inline-block;width:46px;height:44px;color:var(--muted);font-size:12px}
 .x:active,.link:active{background:#d9eff9;border-radius:3px}
 .x.arm,.x.arm:active{background:var(--danger);color:#fff;border-radius:3px;font-size:11px;font-weight:700;line-height:1.25}
 .link{color:var(--blue);font-size:14px;min-height:44px;padding:0 10px}
 
-/* 注文のカード（作る・お渡し）。番号をいちばん大きく、次に味。押すボタンは1つだけ。 */
+/* 伝える画面の行。今年の版と同じ：まだ伝えていない行は黄色、押した行は青く残してから畳む。 */
+.how{padding:6px 14px;font-size:12px;color:var(--ink);background:var(--strip);border-bottom:1px solid var(--line)}
+.how b{display:inline-block;min-width:1.5em;height:1.5em;margin-right:6px;border-radius:3px;background:var(--ink);color:#fff;font-weight:700;text-align:center;line-height:1.5em}
+.how small{display:block;margin:1px 0 0 28px;font-size:11px;color:var(--muted)}
+.o.wait{background:var(--wait);border-bottom-color:var(--wait-line);max-height:120px}
+.o.wait.old{background:#ffd9d0;border-bottom-color:#eeb4a8}
+.o .nm small.late{color:var(--danger);font-weight:700}
+.tag{display:inline-block;margin-right:6px;padding:0 6px;border-radius:2px;background:var(--ink);color:#fff;font-size:11px;font-weight:700;line-height:1.6}
+.mk{display:inline-flex;align-items:center;justify-content:center;width:46px;height:44px;border-radius:3px;background:var(--blue);color:#fff;font-weight:700;font-size:17px}
+.mk:active{background:var(--blue-press)}
+.o.sent{max-height:120px;color:#fff;background:linear-gradient(var(--blue),var(--blue)) right/100% 100% no-repeat;animation:wipe .16s ease-out}
+.o.sent .nm small{color:inherit;font-size:13px;font-weight:700}
+.o.sent .mk{background:none;color:transparent}
+.o.sent .mk.got{background:#fff;color:var(--blue)}
+.o.sent .x{visibility:hidden}
+.o.sent .sq{box-shadow:0 0 0 1px #fff}
+.o.sent.out{overflow:hidden;animation:fold .2s ease-in forwards}
+@keyframes wipe{from{background-size:0 100%}}
+@keyframes fold{to{max-height:0;min-height:0;padding-top:0;padding-bottom:0;opacity:0}}
+@media (prefers-reduced-motion:reduce){.o.sent,.o.sent.out{animation:none}}
+.none strong{display:block;font-size:16px;color:var(--ink)}
+
+/* 注文のカード（お渡し）。番号をいちばん大きく、次に味。押すボタンは1つだけ。 */
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:8px;padding:10px}
 .card{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-bottom:4px solid var(--line);border-radius:3px;overflow:hidden}
-.card.new{background:var(--wait);border-color:var(--wait-line)}
-.card.old{background:#ffd9d0;border-color:#eeb4a8}
-.card.making{border-color:var(--blue)}
-.card.ready{border-color:var(--ink)}
+.card.told{border-color:var(--blue)}
 .card .top{display:flex;align-items:baseline;justify-content:space-between;gap:6px;padding:8px 10px 0}
 .card .no{font-size:32px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
 .card .ago{font-size:11px;color:var(--muted)}
-.card.old .ago{color:var(--danger);font-weight:700}
 .card .fl{padding:2px 10px 8px;font-size:16px;font-weight:600;overflow-wrap:anywhere}
 .card .fl small{display:block;font-size:11px;font-weight:400;color:var(--muted)}
 .card .acts{display:flex;margin-top:auto;border-top:1px solid rgba(0,0,0,.08)}
@@ -122,14 +139,18 @@ td:first-child,th:first-child{text-align:left}
 th{padding:7px 14px;font-weight:400;font-size:12px;color:var(--muted);background:var(--strip)}
 tfoot td{font-weight:700;font-size:18px}
 
-/* 掲示板：お客さんに向ける画面。黒地に白い番号。できた番号を大きく。 */
-.board{display:flex;flex-direction:column;min-height:100%;background:#16191c;color:#fff}
-.board h2{margin:0;padding:12px 16px 8px;font-size:15px;font-weight:700;letter-spacing:.06em}
-.board .nums{display:flex;flex-wrap:wrap;gap:10px;padding:4px 16px 18px}
-.board .big b{min-width:2.2em;padding:6px 14px;border-radius:3px;background:#fff;color:#16191c;font-size:clamp(44px,11vw,96px);line-height:1.15;text-align:center;font-variant-numeric:tabular-nums}
-.board .small{border-top:1px solid rgba(255,255,255,.2)}
-.board .small b{min-width:2.4em;padding:2px 8px;border:1px solid rgba(255,255,255,.45);border-radius:3px;font-size:clamp(20px,4.5vw,34px);font-weight:600;text-align:center;font-variant-numeric:tabular-nums}
-.board p{margin:0;padding:4px 16px 18px;font-size:15px;opacity:.65}
+/* 作る人用：見せるだけの画面。黒地に白。A・B・C の列ごとに、頼まれている注文を大きく。 */
+.board{min-height:100%;background:#16191c;color:#fff}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));min-height:100%}
+.col{padding:0 8px 16px;border-left:1px solid rgba(255,255,255,.2)}
+.col:first-child{border-left:0}
+.col h2{margin:0;padding:10px 4px;font-size:clamp(28px,8vw,56px);font-weight:700;line-height:1.1;border-bottom:1px solid rgba(255,255,255,.2)}
+.col h2 small{margin-left:8px;font-size:13px;font-weight:400;opacity:.65}
+.col p{margin:0;padding:14px 4px;font-size:14px;opacity:.5}
+.job{padding:10px 4px;border-bottom:1px solid rgba(255,255,255,.2)}
+.job b{display:block;font-size:clamp(26px,7vw,52px);line-height:1.1;font-variant-numeric:tabular-nums}
+.job span{display:block;font-size:clamp(14px,3.6vw,24px);font-weight:600;overflow-wrap:anywhere}
+.job:first-of-type{background:rgba(255,255,255,.1)}
 
 /* 広い画面の受付：左に一覧、右に味のボタン。 */
 @media (min-width:768px) and (min-height:500px){
@@ -187,9 +208,11 @@ const FLAVORS=[
   {id:'orange',name:'オレンジ',price:300,c:'--f-orange'}
 ];
 const DOUBLE=400, F=Object.fromEntries(FLAVORS.map(f=>[f.id,f]));
-// 注文の進み方。new（待ち）→ making（作っている）→ ready（できた）→ done（渡した）。ほかに cancel（取り消し）。
-const STATUS={new:'待ち',making:'作っている',ready:'できた',done:'渡した',cancel:'取り消し'};
-const VIEWS=[['take','受付'],['make','作る'],['give','お渡し'],['board','掲示板'],['sum','集計']];
+// 注文の進み方。new（まだ伝えてない）→ told（作る人に伝えた。maker に A・B・C）→ done（渡した）。ほかに cancel（取り消し）。
+// 作る人は手がべたべたで画面を押せないので、押すのは会計の人と、伝える・渡す人だけ。
+const STATUS={new:'まだ伝えてない',told:'伝えた',done:'渡した',cancel:'取り消し'};
+const VIEWS=[['take','会計'],['tell','伝える'],['give','お渡し'],['makers','作る人用'],['sum','集計']];
+const MAKERS=['A','B','C'];
 const LATE=10*60000; // これより長く待っている注文は、カードを赤みにする。
 
 // 番号と集計は日付ごとに分ける（毎日1番から）。
@@ -200,7 +223,7 @@ const dayLabel=()=>(new Date().getMonth()+1)+'/'+new Date().getDate();
 
 // server: 保存済みの注文（id→注文）。pend: まだ送れていない変更（id→差分）。
 let server={}, pend={}, online=false, loaded=false, es=null, lastBeat=0, t0=Date.now();
-let view='take', stuck=false, pendAt=0, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
+let view='take', flash={}, stuck=false, pendAt=0, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
 
 function loadLocal(){try{const x=JSON.parse(localStorage.getItem(LS)||'null');if(x){if(!BASE)server=x.server||{};pend=x.pend||{}}}catch(e){}}
 function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(BASE?{pend}:{server,pend:{}}))}catch(e){}}
@@ -289,12 +312,12 @@ const dots=o=>flv(o).map(f=>'<i class="sq" style="background:var('+(F[f]?F[f].c:
 const ago=(t,now)=>{const m=Math.floor((now-t)/60000);return m<1?'いま':m+'分前'};
 const byNo=(a,b)=>a.no-b.no;
 
-// 待ちの件数と、およその待ち時間。直近15分にできた数から、1件あたりの速さを出す。
+// まだ伝えていない件数と、およその待ち時間。直近15分に作る人へ伝えた数から、1件あたりの速さを出す。
 function waitInfo(){
   const now=Date.now(),all=list();
-  const q=all.filter(o=>o.status==='new'||o.status==='making').length;
-  const made=all.filter(o=>o.readyAt&&now-o.readyAt<15*60000).length;
-  return {q,min:made>=3&&q?Math.max(1,Math.round(q/(made/15))):null};
+  const q=all.filter(o=>o.status==='new').length;
+  const told=all.filter(o=>o.toldAt&&now-o.toldAt<15*60000).length;
+  return {q,min:told>=3&&q?Math.max(1,Math.round(q/(told/15))):null};
 }
 
 // 中身が変わったときだけ書き換える。他の端末の更新で、押している最中のボタンが作り直されてタップが消えるのを防ぐ。
@@ -325,60 +348,64 @@ function renderTiles(){
     :'<button class="tile wide" data-act="dbl"><span class="name">ダブル</span><span class="price">¥'+DOUBLE+'</span></button>'));
 }
 
-// 受付：待ちの数字と、入れた注文の履歴（新しい順）。まちがえた注文はここで取り消す。
+// 会計：お客さんの対応をする人が、聞いたその場で自分で押す。上は入れた注文の履歴（新しい順）で、まちがえたらここで取り消す。
 function viewTake(now){
   const w=waitInfo(),all=live().sort((a,b)=>b.no-a.no);
-  const head='<div class="wait"><span><b>'+w.q+'</b>待ち（件）</span><span><b>'+(w.min==null?'–':w.min)+'</b>およその待ち（分）</span></div>';
+  const head='<div class="kpi"><span><b>'+w.q+'</b>まだ伝えてない（件）</span><span><b>'+(w.min==null?'–':w.min)+'</b>およその待ち（分）</span></div>';
   if(!all.length)return head+'<div class="none">'+(BASE&&!loaded?'読み込み中':'味を押すと、番号がついてここに出ます')+'</div>';
-  return head+'<div class="cap">入れた注文（新しい順）</div>'+all.slice(0,60).map(o=>{
-    const can=o.status==='new'||o.status==='making';
-    return '<div class="o"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small><span class="st '+esc(o.status)+'">'+esc(STATUS[o.status]||'')+'</span>'+(o.kind==='double'?'ダブル　':'')+hms(o.createdAt)+'</small></span><span class="r">'
-      +(can?(armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">本当に<br>消す</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(o.no)+'番を取り消す">取消</button>'):'')
-      +'</span></div>';
+  return head+'<div class="cap">入れた注文（新しい順）</div>'+all.slice(0,60).map(o=>
+    '<div class="o"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small><span class="st '+esc(o.status)+'">'+esc(STATUS[o.status]||'')+(o.status==='told'&&o.maker?' '+esc(o.maker):'')+'</span>'+(o.kind==='double'?'ダブル　':'')+hms(o.createdAt)+'</small></span><span class="r">'
+      +(o.status==='new'?cancelBtn(o):'')+'</span></div>').join('');
+}
+const cancelBtn=o=>armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">本当に<br>消す</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(o.no)+'番を取り消す">取消</button>';
+// 伝える：まだ伝えていない注文を古い順に。作る人に声をかけたら、その相手の A・B・C を押す。
+function viewTell(now){
+  const w=list().filter(o=>o.status==='new'||flash[o.id]).sort(byNo);
+  const how='<div class="how"><b>2</b>作る人に声をかけたら、その相手のボタンを押す<small>部室棟側の人から順に A、B、C</small></div>';
+  if(!w.length)return how+'<div class="none">'+(BASE&&!loaded?'読み込み中':'<strong>伝えてない注文はありません</strong>')+'</div>';
+  return how+w.slice(0,80).map((o,i)=>{
+    if(flash[o.id])return '<div class="o sent'+(flash[o.id].out?' out':'')+'"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>✓ '+esc(flash[o.id].m)+' に伝えた</small></span><span class="r">'+MAKERS.map(m=>'<span class="mk'+(m===flash[o.id].m?' got':'')+'">'+m+'</span>').join('')+'<span class="x"></span></span></div>';
+    const late=now-o.createdAt>LATE;
+    return '<div class="o wait'+(late?' old':'')+'"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small'+(late?' class="late"':'')+'>'+(o.kind==='double'?'ダブル　':'')+(i===0&&w.length>1?'<span class="tag">次に伝える</span>':'')+(late?Math.floor((now-o.createdAt)/60000)+'分前':hm(o.createdAt))+'</small></span><span class="r">'
+      +MAKERS.map(m=>'<button class="mk" data-act="told" data-m="'+m+'" data-id="'+esc(o.id)+'" aria-label="'+m+'に伝えた">'+m+'</button>').join('')+cancelBtn(o)+'</span></div>';
   }).join('');
 }
-function card(o,now,btn,back){
-  const old=o.status==='new'&&now-o.createdAt>LATE;
-  return '<div class="card '+esc(o.status)+(old?' old':'')+'"><div class="top"><span class="no">'+esc(o.no)+'</span><span class="ago">'+ago(o.createdAt,now)+'</span></div>'
+function card(o,now){
+  return '<div class="card told"><div class="top"><span class="no">'+esc(o.no)+'</span><span class="ago">'+esc(o.maker||'?')+'　'+ago(o.toldAt||o.createdAt,now)+'</span></div>'
     +'<div class="fl">'+dots(o)+esc(fl(o))+(o.kind==='double'?'<small>ダブル</small>':'')+'</div>'
-    +'<div class="acts">'+(back?'<button class="back" data-act="set" data-to="'+back+'" data-id="'+esc(o.id)+'">戻す</button>':'')+btn+'</div></div>';
+    +'<div class="acts"><button class="back" data-act="set" data-to="new" data-id="'+esc(o.id)+'">戻す</button><button class="go" data-act="set" data-to="done" data-id="'+esc(o.id)+'">渡した</button></div></div>';
 }
-const goBtn=(o,to,text,dark)=>'<button class="go'+(dark?' dark':'')+'" data-act="set" data-to="'+to+'" data-id="'+esc(o.id)+'">'+text+'</button>';
-// 作る：いま作っている注文を上に、その下に待ちを古い順に並べる。手の空いた人が次の1件を取る。
-function viewMake(now){
-  const all=list(),mk=all.filter(o=>o.status==='making').sort(byNo),nw=all.filter(o=>o.status==='new').sort(byNo);
-  if(!mk.length&&!nw.length)return '<div class="none">'+(BASE&&!loaded?'読み込み中':'待っている注文はありません')+'</div>';
-  return (mk.length?'<div class="cap">作っている '+mk.length+'件</div><div class="cards">'+mk.map(o=>card(o,now,goBtn(o,'ready','できた',true),'new')).join('')+'</div>':'')
-    +(nw.length?'<div class="cap">待ち '+nw.length+'件（古い順）</div><div class="cards">'+nw.slice(0,60).map(o=>card(o,now,goBtn(o,'making','作る'))).join('')+'</div>':'');
-}
-// お渡し：できた注文を並べる。番号を見て渡したら押す。券をなくした人は、下の一覧から味と頃合いで探す。
+// お渡し：作る人に伝えてあって、まだ渡していない注文。券の番号を見て、味を確かめて渡す。券をなくした人は、味と頃合いからここで探す。
 function viewGive(now){
-  const all=list(),rd=all.filter(o=>o.status==='ready').sort(byNo),rest=all.filter(o=>o.status==='new'||o.status==='making').sort(byNo),dn=all.filter(o=>o.status==='done').sort((a,b)=>(b.doneAt||0)-(a.doneAt||0));
-  const line=(o,r)=>'<div class="o'+(o.status==='done'?' gone':'')+'"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small><span class="st '+esc(o.status)+'">'+esc(STATUS[o.status])+'</span>'+(o.kind==='double'?'ダブル　':'')+hm(o.createdAt)+' に注文</small></span><span class="r">'+r+'</span></div>';
-  return (rd.length?'<div class="cap">できた '+rd.length+'件　渡したら押す</div><div class="cards">'+rd.map(o=>card(o,now,goBtn(o,'done','渡した'),'making')).join('')+'</div>':'<div class="none">できた注文はありません</div>')
-    +(rest.length?'<div class="cap">まだできていない '+rest.length+'件</div>'+rest.slice(0,80).map(o=>line(o,'')).join(''):'')
-    +(dn.length?'<div class="cap">渡した（新しい順）　まちがえたら「戻す」</div>'+dn.slice(0,20).map(o=>line(o,'<button class="link" data-act="set" data-to="ready" data-id="'+esc(o.id)+'">戻す</button>')).join(''):'');
+  const all=list(),td=all.filter(o=>o.status==='told'&&!flash[o.id]).sort(byNo),nw=all.filter(o=>o.status==='new').sort(byNo),dn=all.filter(o=>o.status==='done').sort((a,b)=>(b.doneAt||0)-(a.doneAt||0));
+  const line=(o,r)=>'<div class="o'+(o.status==='done'?' gone':'')+'"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+hm(o.createdAt)+' に注文</small></span><span class="r">'+r+'</span></div>';
+  return (td.length?'<div class="cap">作っている・できた '+td.length+'件　渡したら押す</div><div class="cards">'+td.map(o=>card(o,now)).join('')+'</div>':'<div class="none">渡す注文はありません</div>')
+    +(nw.length?'<div class="cap">まだ作る人に伝えていない '+nw.length+'件</div>'+nw.slice(0,80).map(o=>line(o,'')).join(''):'')
+    +(dn.length?'<div class="cap">渡した（新しい順）　まちがえたら「戻す」</div>'+dn.slice(0,20).map(o=>line(o,'<button class="link" data-act="set" data-to="told" data-id="'+esc(o.id)+'">戻す</button>')).join(''):'');
 }
-// 掲示板：お客さんに向ける画面。できた番号を大きく、作っている番号を小さく。
-function viewBoard(){
-  const all=list(),rd=all.filter(o=>o.status==='ready').sort(byNo),rest=all.filter(o=>o.status==='new'||o.status==='making').sort(byNo);
-  return '<div class="board"><h2>できました</h2>'+(rd.length?'<div class="nums big">'+rd.map(o=>'<b>'+esc(o.no)+'</b>').join('')+'</div>':'<p>番号が出るまで、少しお待ちください</p>')
-    +'<div class="small"><h2>つくっています</h2>'+(rest.length?'<div class="nums">'+rest.slice(0,80).map(o=>'<b>'+esc(o.no)+'</b>').join('')+'</div>':'<p>いま待っている注文はありません</p>')+'</div></div>';
+// 作る人用：作る人に見せるだけの画面（押すところはない）。A・B・C それぞれが、いま頼まれている注文を古い順に。
+function viewMakers(){
+  const td=list().filter(o=>o.status==='told').sort((a,b)=>(a.toldAt||0)-(b.toldAt||0));
+  return '<div class="board"><div class="cols">'+MAKERS.map(m=>{
+    const mine=td.filter(o=>o.maker===m);
+    return '<div class="col"><h2>'+m+'<small>'+mine.length+'件</small></h2>'+(mine.length?mine.slice(0,6).map(o=>'<div class="job"><b>'+esc(o.no)+'</b><span>'+dots(o)+esc(fl(o))+'</span></div>').join(''):'<p>なし</p>')+'</div>';
+  }).join('')+'</div></div>';
 }
 // 集計：売上と、取り消した注文。
 function viewSum(){
-  const by={};let tq=0,tt=0;const cnt={new:0,making:0,ready:0,done:0};
-  live().forEach(o=>{const k=o.kind==='double'?'ダブル':fl(o);by[k]=by[k]||{q:0,t:0};by[k].q++;by[k].t+=o.total;tq++;tt+=o.total;if(o.status in cnt)cnt[o.status]++});
+  const by={},mk={A:0,B:0,C:0};let tq=0,tt=0;const cnt={new:0,told:0,done:0};
+  live().forEach(o=>{const k=o.kind==='double'?'ダブル':fl(o);by[k]=by[k]||{q:0,t:0};by[k].q++;by[k].t+=o.total;tq++;tt+=o.total;if(o.status in cnt)cnt[o.status]++;if(o.maker in mk&&o.status!=='new')mk[o.maker]++});
   const rows=FLAVORS.map(f=>f.name).concat('ダブル').map(k=>'<tr><td>'+esc(k)+'</td><td>'+(by[k]?by[k].q:0)+'</td><td>'+yen(by[k]?by[k].t:0)+'</td></tr>').join('');
   const c=list().filter(o=>o.status==='cancel').sort((a,b)=>(b.cancelAt||0)-(a.cancelAt||0));
   return '<table><thead><tr><th>'+dayLabel()+'の集計</th><th>個数</th><th>金額</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><td>合計</td><td>'+tq+'</td><td>'+yen(tt)+'</td></tr></tfoot></table>'
-    +'<div class="cap">いまの内訳</div><div class="wait"><span><b>'+cnt.new+'</b>待ち</span><span><b>'+cnt.making+'</b>作っている</span><span><b>'+cnt.ready+'</b>できた</span><span><b>'+cnt.done+'</b>渡した</span></div>'
+    +'<div class="cap">いまの内訳</div><div class="kpi"><span><b>'+cnt.new+'</b>まだ伝えてない</span><span><b>'+cnt.told+'</b>伝えた</span><span><b>'+cnt.done+'</b>渡した</span></div>'
+    +'<div class="cap">A・B・C に伝えた数</div><div class="kpi"><span><b>'+mk.A+'</b>A</span><span><b>'+mk.B+'</b>B</span><span><b>'+mk.C+'</b>C</span></div>'
     +'<div class="cap">取り消した注文 '+c.length+'件　まちがって消したら「戻す」</div>'
     +(c.length?c.slice(0,200).map(o=>'<div class="o gone"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+(o.cancelAt?hm(o.cancelAt)+' に取消':'取消')+'</small></span><span class="r"><button class="link" data-act="set" data-to="new" data-id="'+esc(o.id)+'">戻す</button></span></div>').join(''):'<div class="none">ありません</div>');
 }
 function renderTabs(){
-  const all=list(),n={make:all.filter(o=>o.status==='new').length,give:all.filter(o=>o.status==='ready').length};
-  put($('#seg'),VIEWS.map(v=>'<button data-act="view" data-id="'+v[0]+'"'+(view===v[0]?' class="on" aria-current="true"':'')+'>'+v[1]+(n[v[0]]?'<b class="hot">'+n[v[0]]+'</b>':'')+'</button>').join(''));
+  const all=list(),n={tell:all.filter(o=>o.status==='new').length,give:all.filter(o=>o.status==='told').length};
+  put($('#seg'),VIEWS.map(v=>'<button data-act="view" data-id="'+v[0]+'"'+(view===v[0]?' class="on" aria-current="true"':'')+'>'+v[1]+(n[v[0]]?'<b'+(v[0]==='tell'?' class="hot"':'')+'>'+n[v[0]]+'</b>':'')+'</button>').join(''));
 }
 // つながっている間は右上に小さく、問題があるときだけ赤い帯で知らせる。
 function renderMode(){
@@ -397,7 +424,7 @@ function render(){
   const now=Date.now();
   $('#app').dataset.view=view;$('#pad').hidden=view!=='take';
   renderTabs();if(view==='take'){renderTiles();renderLast()}
-  put($('#pane'),view==='take'?viewTake(now):view==='make'?viewMake(now):view==='give'?viewGive(now):view==='board'?viewBoard():viewSum());
+  put($('#pane'),view==='take'?viewTake(now):view==='tell'?viewTell(now):view==='give'?viewGive(now):view==='makers'?viewMakers():viewSum());
   renderMode();
 }
 
@@ -419,14 +446,24 @@ function take(kind,flavors){
   });
 }
 // 段階を進める・戻す。押した時刻も一緒に残す（待ち時間の目安と、あとの振り返りに使う）。
-const STAMP={making:'startAt',ready:'readyAt',done:'doneAt'};
-const SAID={making:'作りはじめ',ready:'できた',done:'渡した',new:'待ちに戻した'};
+const STAMP={told:'toldAt',done:'doneAt'};
+const SAID={done:'渡した',new:'「まだ伝えてない」に戻した',told:'「伝えた」に戻した'};
 function setStatus(id,to){
   const o=list().find(x=>x.id===id);if(!o)return;
-  const p={status:to};if(STAMP[to])p[STAMP[to]]=Date.now();
+  const p={status:to};if(to==='done')p.doneAt=Date.now();
   if(navigator.vibrate)navigator.vibrate(30);
   toast(o.no+'番　'+(SAID[to]||STATUS[to]));
   patchOrder(id,p);
+}
+// 伝えた：押した行をしばらく青く残して、誰に伝えたかを見せてから一覧から外す。
+function told(id,m){
+  const o=list().find(x=>x.id===id);
+  const f=flash[id]={m,out:false};
+  setTimeout(()=>{if(flash[id]===f){f.out=true;render()}},900);
+  setTimeout(()=>{if(flash[id]===f){delete flash[id];render()}},1120);
+  if(navigator.vibrate)navigator.vibrate(40);
+  toast((o?o.no+'番　':'')+m+' に伝えた');
+  patchOrder(id,{status:'told',maker:m,toldAt:Date.now()});
 }
 
 document.addEventListener('click',e=>{
@@ -440,6 +477,7 @@ document.addEventListener('click',e=>{
   else if(a==='dbl'){dbl=dbl?null:[];renderTiles()}
   else if(a==='view'){view=id;try{localStorage.setItem('wataame-cho-next-view',view);history.replaceState(null,'','#'+view)}catch(e){}render();$('#pane').scrollTop=0}
   else if(a==='set')setStatus(id,b.dataset.to);
+  else if(a==='told')told(id,b.dataset.m);
   else if(a==='cancel'){armCancel=id;render();setTimeout(()=>{if(armCancel===id){armCancel=null;render()}},3000)}
   else if(a==='cancel2'){const o=list().find(x=>x.id===id);armCancel=null;patchOrder(id,{status:'cancel',cancelAt:Date.now()});toast((o?o.no+'番を':'')+'取り消した')}
 });
@@ -449,7 +487,7 @@ function rollover(){
   if(dayKey()===DAY)return false;
   if(es){es.close();es=null}
   DAY=dayKey();BASE=root(DAY);LS='wataame-cho-next-'+DAY;
-  server={};pend={};pendT={};doneT={};dbl=null;armCancel=null;loaded=false;online=false;stuck=false;pendAt=0;t0=Date.now();
+  server={};pend={};flash={};pendT={};doneT={};dbl=null;armCancel=null;loaded=false;online=false;stuck=false;pendAt=0;t0=Date.now();
   $('#day').textContent=dayLabel();
   loadLocal();if(BASE)connect();render();
   return true;

@@ -26,7 +26,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 
 header{flex:none;display:flex;align-items:center;justify-content:space-between;height:40px;padding:env(safe-area-inset-top,0px) 14px 0;box-sizing:content-box}
-h1{margin:0;font-size:15px;font-weight:700;letter-spacing:.04em}
+h1{margin:0;white-space:nowrap;font-size:15px;font-weight:700;letter-spacing:.04em}
 h1 span{margin-left:8px;font-size:12px;font-weight:400;letter-spacing:0;color:var(--muted)}
 .mode{margin-left:auto;font-size:11px;color:var(--muted)}
 .helpbtn{margin:0 -8px 0 6px;padding:0 8px;height:40px;font-size:13px;color:var(--blue)}
@@ -214,9 +214,14 @@ tfoot td{font-weight:700;font-size:18px}
 .app[data-role=pick] .seg,.app[data-role=pick] .board,.app[data-role=pick] .pad,.app[data-role=pick] #queue,.app[data-role=pick] #done,.app[data-role=pick] #gone,.app[data-role=pick] #sales{display:none}
 .app[data-role=cash] .seg,.app[data-role=cash] .board,.app[data-role=cash] #queue,.app[data-role=cash] #done,.app[data-role=cash] #gone,.app[data-role=cash] #sales{display:none}
 .app[data-role=order] .pad{display:none}
-#rolebtn{margin-right:0;color:var(--ink)}
-#rolebtn[hidden]{display:none}
-#rolebtn small{margin-left:4px;font-size:11px;color:var(--blue)}
+/* 役の切り替え。見出しにいつも出ていて、押せばすぐ切り替わる（選び直しの画面をはさまない）。 */
+.rsw{display:flex;margin-left:8px;border:1px solid var(--blue);border-radius:4px;overflow:hidden}
+.rsw[hidden]{display:none}
+.rsw button{height:30px;padding:0 9px;font-size:12px;color:var(--blue);white-space:nowrap}
+.rsw button+button{border-left:1px solid var(--blue)}
+.rsw button:active{background:#d9eff9}
+.rsw button.on{background:var(--blue);color:#fff;font-weight:700}
+header .helpbtn{margin-left:2px}
 .roles{display:grid;gap:10px;max-width:560px;margin:0 auto;padding:16px 12px}
 .roles p{margin:0 2px 2px;font-size:15px;font-weight:700}
 .role{display:block;width:100%;padding:16px 16px 14px;text-align:left;background:var(--panel);border:1px solid var(--blue);border-bottom-width:4px;border-radius:3px}
@@ -247,6 +252,9 @@ tfoot td{font-weight:700;font-size:18px}
    右下には客面ディスプレイ風の黒い表示で、直前の注文と今日の合計を出したままにする。スマホの見た目は変えない。 */
 /* 幅の狭いスマホ：4つのタブが収まるように詰める。 */
 @media (max-width:359px){
+  h1 span{display:none}
+  h1{white-space:nowrap}
+  .rsw button{padding:0 6px}
   .seg{margin-left:8px;margin-right:8px}
   .seg button{padding:0 1px;font-size:11px;letter-spacing:-.02em}
   .seg b{margin-left:2px}
@@ -324,7 +332,7 @@ main{min-height:64px}
 </head>
 <body>
 <div class="app" id="app" data-role="pick">
-  <header><h1>わたあめ帳<span id="day"></span></h1><span class="mode" id="mode"></span><button class="helpbtn" id="rolebtn" data-act="roles" hidden></button><button class="helpbtn" id="helpbtn" data-act="help">使い方</button></header>
+  <header><h1>わたあめ帳<span id="day"></span></h1><span class="mode" id="mode"></span><nav class="rsw" id="rsw" aria-label="役の切り替え" hidden></nav><button class="helpbtn" id="helpbtn" data-act="help">使い方</button></header>
   <div class="alert" id="alert" role="alert" hidden></div>
   <nav class="seg" id="seg" aria-label="表示の切り替え"></nav>
   <div class="board" id="board"></div>
@@ -626,9 +634,9 @@ function renderMode(){
   // 送信は普通0.3秒ほどで終わる。失敗したか、2.5秒たっても終わらないときだけ出す。
   else if(n&&(stuck||Date.now()-pendAt>2500))bad='未送信 '+n+'件　電波が戻ると自動で送ります';
   else if(!loaded&&Date.now()-t0<8000)t='読み込み中';
-  else if(n&&online)t='共有中';
+  else if(n&&online)t='';
   else if(!loaded||!online)bad=unsure.length?'つながらない　'+unsure.length+'件が入ったか確認中':'つながらない　再接続中';
-  else t='共有中';
+  else t='';
   $('#mode').textContent=t;
   const al=$('#alert');al.textContent=bad;al.hidden=!bad;
 }
@@ -656,7 +664,8 @@ function renderMine(){
 }
 function render(){
   const app=$('#app');app.dataset.role=role;app.dataset.tab=tab;
-  const rb=$('#rolebtn'),r=ROLES.find(x=>x[0]===role);rb.hidden=!r;if(r)put(rb,r[1]+'<small>変える</small>');
+  const rb=$('#rsw'),r=ROLES.find(x=>x[0]===role);rb.hidden=!r;
+  if(r)put(rb,ROLES.map(x=>'<button data-act="role" data-id="'+x[0]+'"'+(x[0]===role?' class="on" aria-current="true"':'')+'>'+x[1]+'</button>').join(''));
   $('#helpbtn').hidden=!r;
   if(role==='pick')renderPick();
   renderTiles();renderQueue();renderTabs(renderDone(),renderSales());renderMode();renderLast();renderLines();
@@ -742,7 +751,7 @@ document.addEventListener('click',e=>{
   }
   else if(a==='k'||a==='kdel'||a==='kok')askKey(a,id);
   else if(a==='askOff'){ask=null;renderAsk()}
-  else if(a==='role'){setRole(id);render();$('#pane').scrollTop=0}
+  else if(a==='role'){if(id===role)return;setRole(id);tab='queue';render();$('#pane').scrollTop=0}
   else if(a==='roles'){setRole('pick');render();$('#pane').scrollTop=0}
   else if(a==='help'){put($('#helpbody'),HELP);$('#help').hidden=false;$('#helpbody').scrollTop=0}
   else if(a==='helpOff')$('#help').hidden=true;

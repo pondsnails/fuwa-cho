@@ -205,6 +205,8 @@ tfoot td{font-weight:700;font-size:18px}
 .o.w{min-height:46px;padding-top:4px;padding-bottom:4px;box-shadow:inset 6px 0 0 #f5c400;background:#fffbe6}
 .o.w.old{box-shadow:inset 6px 0 0 var(--danger);background:#fff0ec}
 .o.w .no{font-size:20px}
+/* 先に作ることにした注文 */
+.o.w.sel,.o.w.old.sel{box-shadow:inset 6px 0 0 var(--blue);background:#e3f2fb}
 .o.w .ago{font-size:12px;color:var(--muted);padding-right:2px}
 .o.w .x{height:38px}
 .o.w.old .ago{color:var(--danger);font-weight:700}
@@ -566,10 +568,14 @@ function renderTiles(){
 let rest={};try{rest=JSON.parse(localStorage.getItem('wataame-cho-next-rest')||'{}')||{}}catch(e){}
 // 渡した直後の注文（id→押した時刻）。4秒は枠に「戻す」を出す。
 const gave={},lockUntil={};
+// 先に作ることにした注文（待ちの列で押して選ぶ）。選んでいなければ、いちばん古い注文が次。30秒たつか、頼んだら解除。
+let sel=null,selAt=0;
 const waiting=()=>list().filter(o=>o.status==='new').sort((a,b)=>a.no-b.no);
 function renderQueue(){
   if(role!=='order')return;
-  const now=Date.now(),all=list(),w=waiting(),next=w[0];
+  const now=Date.now(),all=list(),w=waiting();
+  if(sel&&(now-selAt>30000||!w.some(o=>o.id===sel)))sel=null;
+  const next=w.find(o=>o.id===sel)||w[0];
   // 上：A・B・C の枠
   put($('#board'),MAKERS.map(m=>{
     const jobs=all.filter(o=>o.status==='told'&&o.maker===m).sort((a,b)=>(a.toldAt||0)-(b.toldAt||0));
@@ -593,9 +599,10 @@ function renderQueue(){
       +'</div>';
   }).join(''));
   // 下：待ちの列
-  put($('#queue'),w.length?'<div class="cap">待ち '+w.length+'件（古い順）</div>'+w.slice(0,100).map((o,i)=>{
+  put($('#queue'),w.length?'<div class="cap">待ち '+w.length+'件（古い順）'+(w.length>1?'　先に作る注文は、押して選ぶ':'')+'</div>'+w.slice(0,100).map((o,i)=>{
       const min=Math.floor((now-o.createdAt)/60000),late=now-o.createdAt>LATE;
-      return '<div class="o w'+(late?' old':'')+'"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+(i===0||o.kind==='double'?'<small>'+(i===0?'<span class="tag">次に頼む</span>':'')+(o.kind==='double'?'ダブル':'')+'</small>':'')+'</span><span class="r"><span class="ago">'+(min<1?'いま':min+'分')+'</span>'
+      const nx=next&&o.id===next.id;
+      return '<div class="o w'+(late?' old':'')+(nx&&sel?' sel':'')+'" data-act="choose" data-id="'+esc(o.id)+'"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+(nx||o.kind==='double'?'<small>'+(nx?'<span class="tag">次に頼む</span>':'')+(o.kind==='double'?'ダブル':'')+'</small>':'')+'</span><span class="r"><span class="ago">'+(min<1?'いま':min+'分')+'</span>'
         +(armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">本当に<br>消す</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(num(o))+'番を取り消す">取消</button>')+'</span></div>';
     }).join('')
     :'<div class="none">'+(BASE&&!loaded?'読み込み中':'<strong>待っている注文はありません</strong>')+'</div>');
@@ -800,8 +807,9 @@ document.addEventListener('click',e=>{
     if(Date.now()<(lockUntil[m]||0))return;
     if(!o||o.status!=='new'){render();return}
     if(navigator.vibrate)navigator.vibrate(40);
-    patchOrder(id,{status:'told',maker:m,toldAt:Date.now()});toast(num(o)+'番　'+m+' に頼んだ');
+    sel=null;patchOrder(id,{status:'told',maker:m,toldAt:Date.now()});toast(num(o)+'番　'+m+' に頼んだ');
   }
+  else if(a==='choose'){const w=waiting();sel=(sel===id||(w[0]&&w[0].id===id))?null:id;selAt=Date.now();render();if(sel)setTimeout(()=>{if(sel===id&&Date.now()-selAt>=30000){sel=null;render()}},30100)}
   else if(a==='unassign'){const o=list().find(x=>x.id===id);if(!o||o.status!=='told')return;patchOrder(id,{status:'new',maker:null});toast(num(o)+'番を待ちに戻した')}
   else if(a==='rest'){const m=b.dataset.m;rest[m]=!rest[m];try{localStorage.setItem('wataame-cho-next-rest',JSON.stringify(rest))}catch(e){}render()}
   else if(a==='undo'){

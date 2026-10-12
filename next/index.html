@@ -133,6 +133,8 @@ tfoot td{font-weight:700;font-size:18px}
 .sheet[hidden]{display:none}
 /* 札の番号を押す画面。数字のボタンも、味のタイルと同じ作り（白地、線、下だけ太い）。 */
 .sheet.low{align-items:flex-end;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+/* 札の色。番号を押すと、その番号の札の色がここに出る。手に持っている札と色がちがえば、打ちまちがい。 */
+.askc{display:flex;align-items:center;justify-content:center;height:40px;font-size:16px;font-weight:700;letter-spacing:.05em;background:var(--strip);color:var(--muted);border-bottom:1px solid var(--line)}
 .askno{padding:8px 14px 2px;font-size:52px;font-weight:700;line-height:1.2;text-align:center;font-variant-numeric:tabular-nums}
 .askno small{margin-left:4px;font-size:20px;font-weight:600}
 .askno.empty{color:var(--line)}
@@ -358,6 +360,7 @@ main{min-height:64px}
 <div class="sheet low" id="ask" role="dialog" aria-label="札の番号" hidden>
   <div class="box">
     <header><h1 id="askTitle"></h1><button class="helpbtn" data-act="askOff">やめる</button></header>
+    <div class="askc" id="askC"></div>
     <div class="askno" id="askNo"></div>
     <p class="askwarn" id="askWarn" hidden></p>
     <div class="keys" id="askKeys"></div>
@@ -684,10 +687,17 @@ function toBottom(){const m=$('#pane');m.scrollTop=m.scrollHeight}
 // 札の番号を聞く。箱から取った札の番号を押して「決定」で注文が入る。
 // 味を押しただけでは注文にならないので、まちがって味に触れただけの注文も減る。
 function openAsk(kind,flavors){ask={kind,flavors,d:'',warn:null};dbl=null;renderTiles();renderAsk()}
+// 札は 1〜TAG_MAX。十の位ごとに札の色を決めておく（0番台と50番台が白、10番台と60番台が赤…）。100番は白。
+// 色は5つだけにしてある。屋外でも見分けやすく、色画用紙でそろえやすいため。変えるときは、札もこの表に合わせて作り直す。
+const TAG_MAX=100;
+const TAG_COLORS=[['白','白い札','#ffffff','#333a40'],['赤','赤い札','#e8452c','#ffffff'],['青','青い札','#2a7fc0','#ffffff'],['黄','黄色い札','#f5c400','#2b2500'],['緑','緑の札','#3aa655','#ffffff']];
+const tagColor=n=>TAG_COLORS[Math.floor((n%100)/10)%5];
 function renderAsk(){
   $('#ask').hidden=!ask;if(!ask)return;
   $('#askTitle').textContent=(ask.kind==='double'?'ダブル ':'')+ask.flavors.map(f=>F[f].name).join('＋');
   const no=$('#askNo');no.classList.toggle('empty',!ask.d);put(no,ask.d?esc(ask.d)+'<small>番</small>':'札の番号');
+  const c=$('#askC'),n0=Number(ask.d),ok0=n0>=1&&n0<=TAG_MAX,tc=ok0?tagColor(n0):null;
+  c.textContent=tc?tc[1]:ask.d?'':'札の色がここに出ます';c.style.background=tc?tc[2]:'';c.style.color=tc?tc[3]:'';
   const w=$('#askWarn');w.hidden=!ask.warn;w.textContent=ask.warn||'';
   put($('#askKeys'),['1','2','3','4','5','6','7','8','9'].map(k=>'<button class="key" data-act="k" data-id="'+k+'">'+k+'</button>').join('')
     +'<button class="key fn" data-act="kdel">1つ消す</button><button class="key" data-act="k" data-id="0">0</button><button class="key ok" data-act="kok"'+(ask.d?'':' disabled')+'>決定</button>');
@@ -700,6 +710,8 @@ function askKey(a,id){
   else if(a==='kdel'){ask.d=ask.d.slice(0,-1);ask.warn=null}
   else if(a==='kok'){
     const n=Number(ask.d);if(!n)return;
+    // ありえない番号は通さない（もう一度押しても通らない）。
+    if(n>TAG_MAX){ask.warn=n+'番の札はありません（札は 1〜'+TAG_MAX+'）。打ち直してください';if(navigator.vibrate)navigator.vibrate([60,60,60]);renderAsk();return}
     const dup=tagInUse(n);
     // 同じ番号の札がまだ外にあるはずなら、一度止める。打ちまちがいか、「渡した」の押し忘れ。
     // 合っていれば、もう一度「決定」。札は手元にあるのだから、前の注文は渡し終わっている。押し忘れとして「渡した」にしておく。

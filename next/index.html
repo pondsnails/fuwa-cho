@@ -160,19 +160,6 @@ td:first-child,th:first-child{text-align:left}
 th{padding:7px 14px;font-weight:400;font-size:12px;color:var(--muted);background:var(--strip)}
 tfoot td{font-weight:700;font-size:18px}
 
-/* 作る人用：見せるだけの画面。黒地に白。A・B・C の列ごとに、頼まれている注文を大きく。 */
-.board{min-height:100%;background:#16191c;color:#fff}
-.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));min-height:100%}
-.col{padding:0 8px 16px;border-left:1px solid rgba(255,255,255,.2)}
-.col:first-child{border-left:0}
-.col h2{margin:0;padding:10px 4px;font-size:clamp(28px,8vw,56px);font-weight:700;line-height:1.1;border-bottom:1px solid rgba(255,255,255,.2)}
-.col h2 small{margin-left:8px;font-size:13px;font-weight:400;opacity:.65}
-.col p{margin:0;padding:14px 4px;font-size:14px;opacity:.5}
-.job{padding:10px 4px;border-bottom:1px solid rgba(255,255,255,.2)}
-.job b{display:block;font-size:clamp(26px,7vw,52px);line-height:1.1;font-variant-numeric:tabular-nums}
-.job span{display:block;font-size:clamp(14px,3.6vw,24px);font-weight:600;overflow-wrap:anywhere}
-.job:first-of-type{background:rgba(255,255,255,.1)}
-
 /* 広い画面の受付：左に一覧、右に味のボタン。 */
 @media (min-width:768px) and (min-height:500px){
   header{height:48px;border-bottom:1px solid var(--line)}
@@ -236,7 +223,6 @@ const STATUS={new:'まだ伝えてない',told:'伝えた',done:'渡した',canc
 const ROLES=[
   ['cash','会計','注文を聞いて、味を押す人',['take']],
   ['order','オーダー管理','作る人に伝えて、できたものを渡す人',['tell','give']],
-  ['makers','作る人に見せる画面','置いておくだけ。押す所はありません',['makers']],
   ['sum','集計','売上と、取り消した注文',['sum']]
 ];
 const VIEWNAME={tell:'伝える',give:'お渡し'};
@@ -411,14 +397,6 @@ function viewGive(now){
     +(nw.length?'<div class="cap">まだ作る人に伝えていない '+nw.length+'件</div>'+nw.slice(0,80).map(o=>line(o,'')).join(''):'')
     +(dn.length?'<div class="cap">渡した（新しい順）　まちがえたら「戻す」</div>'+dn.slice(0,20).map(o=>line(o,'<button class="link" data-act="set" data-to="told" data-id="'+esc(o.id)+'">戻す</button>')).join(''):'');
 }
-// 作る人用：作る人に見せるだけの画面（押すところはない）。A・B・C それぞれが、いま頼まれている注文を古い順に。
-function viewMakers(){
-  const td=list().filter(o=>o.status==='told').sort((a,b)=>(a.toldAt||0)-(b.toldAt||0));
-  return '<div class="board"><div class="cols">'+MAKERS.map(m=>{
-    const mine=td.filter(o=>o.maker===m);
-    return '<div class="col"><h2>'+m+'<small>'+mine.length+'件</small></h2>'+(mine.length?mine.slice(0,6).map(o=>'<div class="job"><b>'+esc(o.no)+'</b><span>'+dots(o)+esc(fl(o))+'</span></div>').join(''):'<p>なし</p>')+'</div>';
-  }).join('')+'</div></div>';
-}
 // 集計：売上と、取り消した注文。
 function viewSum(){
   const by={},mk={A:0,B:0,C:0};let tq=0,tt=0;const cnt={new:0,told:0,done:0};
@@ -464,7 +442,7 @@ function render(){
   const v=role?view:'pick';
   $('#app').dataset.view=v;$('#pad').hidden=v!=='take';
   renderTabs();if(v==='take'){renderTiles();renderLast()}
-  put($('#pane'),v==='pick'?viewPick():view==='take'?viewTake(now):view==='tell'?viewTell(now):view==='give'?viewGive(now):view==='makers'?viewMakers():viewSum());
+  put($('#pane'),v==='pick'?viewPick():view==='take'?viewTake(now):view==='tell'?viewTell(now):view==='give'?viewGive(now):viewSum());
   renderMode();
 }
 
@@ -544,7 +522,7 @@ document.addEventListener('touchstart',()=>{},{passive:true});
 // 開いている間は画面を消灯させない。
 function awake(){try{if(navigator.wakeLock&&!document.hidden)navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}}
 document.addEventListener('visibilitychange',awake);awake();
-// 役割は端末ごとに覚える。URLの #cash #order #makers でも指定できる（置いておく端末をブックマークしておける）。
+// 役割は端末ごとに覚える。URLの #cash #order でも指定できる。
 try{setRole(location.hash.slice(1)||localStorage.getItem('wataame-cho-next-role'))}catch(e){}
 setInterval(tick,1000);
 $('#day').textContent=dayLabel();

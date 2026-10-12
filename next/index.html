@@ -144,8 +144,8 @@ tfoot td{font-weight:700;font-size:18px}
 .sheet header .helpbtn{position:absolute;right:6px;top:0;height:46px;margin:0;font-size:14px}
 .lead{margin:0;padding:18px 14px 6px;font-size:19px;font-weight:700;letter-spacing:.02em}
 .stp{border-bottom:1px solid var(--line)}
-.st{display:flex;align-items:flex-start;gap:10px;padding:13px 14px 12px;font-size:16px;font-weight:600;line-height:1.45}
-.st b{flex:none;width:1.65em;height:1.65em;margin-top:-1px;border-radius:3px;background:var(--ink);color:#fff;font-size:14px;line-height:1.65em;text-align:center}
+.hs{display:flex;align-items:flex-start;gap:10px;padding:13px 14px 12px;font-size:16px;font-weight:600;line-height:1.45}
+.hs b{flex:none;width:1.65em;height:1.65em;margin-top:-1px;border-radius:3px;background:var(--ink);color:#fff;font-size:14px;line-height:1.65em;text-align:center}
 .eg{border-top:1px solid var(--line);pointer-events:none}
 .eg .o.sent{animation:none}
 .eg-x{display:inline-flex;align-items:center;justify-content:center}
@@ -627,17 +627,17 @@ function renderSales(){
     +'<div class="cap">A・B・C に伝えた数</div><div class="sub"><span><b>'+mk.A+'</b>A</span><span><b>'+mk.B+'</b>B</span><span><b>'+mk.C+'</b>C</span></div>');
   return tt;
 }
-// 使い方：やること3つと、まちがえたときだけ。ユーザーと決めた文言なので、変えるときは先に案を見せる。
-const HELP='<p class="lead">やることは3つだけ</p>'
-  +'<div class="stp"><div class="st"><b>1</b><span>注文された味を押す</span></div></div>'
-  +'<div class="stp"><div class="st"><b>2</b><span>作る人に声で伝える</span></div></div>'
-  +'<div class="stp"><div class="st"><b>3</b><span>声をかけた相手のボタン<br>（A・B・C）を押す</span></div></div>'
+// 使い方：開いている画面（会計／オーダー管理）の分だけ出す。やることと、まちがえたときだけ。ユーザーと決めた文言なので、変えるときは先に案を見せる。
+const step=(n,t)=>'<div class="stp"><div class="hs"><b>'+n+'</b><span>'+t+'</span></div></div>';
+const qa=rows=>'<div class="cap">まちがえたら</div><dl class="qa">'+rows.map(r=>'<div><dt>'+r[0]+'</dt><dd>'+r[1]+'</dd></div>').join('')+'</dl>';
+const HELP_CASH='<p class="lead">やることは4つだけ</p>'
+  +step(1,'札を1枚取る')+step(2,'注文された味を押す')+step(3,'札の番号を打って「決定」')+step(4,'札をお客さんに渡す')
+  +qa([['入れた注文をまちがえた','入れた注文の右の「取消」を2回']]);
+const HELP_ORDER='<p class="lead">やることは2つだけ</p>'
+  +step(1,'待ちの注文の右に出ている<br>A・B・C のうち、頼む人のボタンを押す')+step(2,'できて渡したら、<br>その人の枠の「渡した」を押す')
   +'<p class="ht">A・B・C は、作る人を部室棟側から順に。</p>'
-  +'<div class="cap">まちがえたら</div>'
-  +'<dl class="qa">'
-  +'<div><dt>味を押しまちがえた</dt><dd>「取消」を2回</dd></div>'
-  +'<div><dt>それ以外</dt><dd>上の「取消」か「渡した」を開いて「戻す」</dd></div>'
-  +'</dl>';
+  +qa([['いま押したのをまちがえた','「元に戻す」'],['それより前のもの','「注文一覧」から']]);
+const helpText=()=>role==='cash'?HELP_CASH:HELP_ORDER;
 function renderTabs(){
   $('#logTitle').textContent='注文一覧';
 }
@@ -779,7 +779,7 @@ document.addEventListener('click',e=>{
   else if(a==='askOff'){ask=null;renderAsk()}
   else if(a==='role'){if(id===role)return;setRole(id);tab='queue';render();$('#pane').scrollTop=0}
   else if(a==='roles'){setRole('pick');render();$('#pane').scrollTop=0}
-  else if(a==='help'){put($('#helpbody'),HELP);$('#help').hidden=false;$('#helpbody').scrollTop=0}
+  else if(a==='help'){put($('#helpbody'),helpText());$('#help').hidden=false;$('#helpbody').scrollTop=0}
   else if(a==='helpOff')$('#help').hidden=true;
   else if(a==='sum'){render();$('#sum').hidden=false}
   else if(a==='sumOff')$('#sum').hidden=true;

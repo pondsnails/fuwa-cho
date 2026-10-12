@@ -169,6 +169,26 @@ tfoot td{font-weight:700;font-size:18px}
 .lastline .what{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:15px;font-weight:600;color:var(--ink)}
 .lastline em{font-style:normal;font-size:15px;font-variant-numeric:tabular-nums}
 .lastline em.fresh{color:var(--blue);font-weight:700}
+/* 役割で画面を分ける。会計は「味を押す」と自分が入れた注文だけ。オーダー管理は一覧だけで、味のボタンは出さない。 */
+#pick,#mine{display:none}
+.app[data-role=pick] #pick{display:block}
+.app[data-role=cash] #mine{display:block}
+.app[data-role=pick] .seg,.app[data-role=pick] .pin,.app[data-role=pick] .pad,.app[data-role=pick] #queue,.app[data-role=pick] #done,.app[data-role=pick] #gone,.app[data-role=pick] #sales{display:none}
+.app[data-role=cash] .seg,.app[data-role=cash] .pin,.app[data-role=cash] #queue,.app[data-role=cash] #done,.app[data-role=cash] #gone,.app[data-role=cash] #sales{display:none}
+.app[data-role=order] .pad{display:none}
+#rolebtn{margin-right:0;color:var(--ink)}
+#rolebtn[hidden]{display:none}
+#rolebtn small{margin-left:4px;font-size:11px;color:var(--blue)}
+.roles{display:grid;gap:10px;max-width:560px;margin:0 auto;padding:16px 12px}
+.roles p{margin:0 2px 2px;font-size:15px;font-weight:700}
+.role{display:block;width:100%;padding:16px 16px 14px;text-align:left;background:var(--panel);border:1px solid var(--blue);border-bottom-width:4px;border-radius:3px}
+.role:active{background:var(--blue);color:#fff}
+.role b{display:block;font-size:20px}
+.role span{display:block;margin-top:3px;font-size:13px;color:var(--muted)}
+.role:active span{color:inherit}
+.st{display:inline-block;margin-right:6px;padding:0 6px;border-radius:2px;font-size:11px;font-weight:700;line-height:1.6;background:var(--line);color:var(--ink)}
+.st.new{background:#f5c400;color:#2b2500}
+.st.told{background:var(--blue);color:#fff}
 .tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;height:66px;padding:0 2px;background:var(--panel);border:1px solid var(--c);border-bottom-width:4px;border-radius:3px}
 .tile .name{font-size:15px;font-weight:600;white-space:nowrap}
@@ -182,7 +202,7 @@ tfoot td{font-weight:700;font-size:18px}
 .tile.hit .price{font-size:14px;font-weight:700}
 .tile.on .price{padding:3px 10px;border:1px solid #fff;border-radius:3px;font-size:13px;opacity:1}
 /* 番号の表示は、レジの客面ディスプレイと同じ黒地に白。注文ボタンのすぐ上に出す。 */
-.toast{position:absolute;left:10px;right:10px;bottom:100%;margin-bottom:8px;padding:12px 16px;border-radius:3px;background:#16191c;color:#fff;font-weight:700;font-size:18px;text-align:center;pointer-events:none}
+.toast{position:absolute;z-index:3;left:10px;right:10px;bottom:calc(var(--padh,0px) + 8px);padding:12px 16px;border-radius:3px;background:#16191c;color:#fff;font-weight:700;font-size:18px;text-align:center;pointer-events:none}
 
 /* タブレット・PC（横に広い画面）。お手本のAirレジのiPad画面にならう：
    白い左の列に一覧（下線つきのタブ）、灰色の右の列に味のタイル、見出しは中央。
@@ -216,6 +236,8 @@ main{min-height:64px}
   .seg button+button{border-left:0}
   .seg button.on{background:none;color:var(--blue);font-weight:700;border-bottom-color:var(--blue)}
   .pin{grid-column:1;grid-row:4;border-top:0}
+  .app[data-role=order],.app[data-role=pick]{grid-template-columns:minmax(0,1fr)}
+  .app[data-role=order] main,.app[data-role=pick] main{grid-column:1}
   main{grid-column:1;grid-row:5}
   .pad{grid-column:2;grid-row:3 / span 3;display:flex;flex-direction:column;padding:16px;background:var(--bg);border-top:0;border-left:1px solid var(--line)}
   .pad .how{margin:0 0 12px;padding:0;font-size:14px}
@@ -226,7 +248,8 @@ main{min-height:64px}
   .tile.hit .price{font-size:17px}
   .tile.wide{height:64px}
   .tile.on .price{font-size:15px}
-  .toast{top:auto;bottom:16px;left:16px;right:16px;margin:0;padding:14px 16px;font-size:22px}
+  .toast{bottom:16px;left:16px;right:16px;padding:14px 16px;font-size:22px}
+  .app[data-role=cash] .toast{left:calc(45.5% + 16px)}
   .toast:not([hidden]){display:flex;align-items:center;justify-content:center;min-height:126px}
   .last{display:block;margin-top:auto;padding:14px 18px 12px;border-radius:3px;background:#16191c;color:#fff}
   .last small{display:block;font-size:12px;opacity:.65}
@@ -253,24 +276,26 @@ main{min-height:64px}
 </style>
 </head>
 <body>
-<div class="app">
-  <header><h1>わたあめ帳<span id="day"></span></h1><span class="mode" id="mode"></span><button class="helpbtn" id="helpbtn" data-act="help">使い方</button></header>
+<div class="app" id="app" data-role="pick">
+  <header><h1>わたあめ帳<span id="day"></span></h1><span class="mode" id="mode"></span><button class="helpbtn" id="rolebtn" data-act="roles" hidden></button><button class="helpbtn" id="helpbtn" data-act="help">使い方</button></header>
   <div class="alert" id="alert" role="alert" hidden></div>
   <nav class="seg" id="seg" aria-label="表示の切り替え"></nav>
   <div class="pin" id="pin"></div>
   <main id="pane">
+    <div id="pick"></div>
+    <div id="mine"></div>
     <div id="queue"></div>
     <div id="done" hidden></div>
     <div id="gone" hidden></div>
     <div id="sales" hidden></div>
   </main>
   <div class="pad">
-    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
     <div class="how"><b>1</b>注文された味を押す</div>
     <div class="lines"><div class="lastline" id="lastline"></div></div>
     <div class="tiles" id="tiles"></div>
     <div class="last" id="last"></div>
   </div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </div>
 
 <!-- 札の番号：味を押したあとに出る。箱から取った札の番号を押して「決定」。親指が届くよう、画面の下に出す。 -->
@@ -303,6 +328,7 @@ const $=s=>document.querySelector(s);
 const yen=n=>'¥'+Number(n||0).toLocaleString('ja-JP');
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const hms=t=>{const d=new Date(t||0);return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0')};
 const hm=t=>{const d=new Date(t||0);return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0')};
 const FLAVORS=[
   {id:'plain',name:'プレーン',price:200,c:'--f-plain'},
@@ -325,7 +351,7 @@ const LATE=5*60000; // これより長く未伝達の注文は、時刻を赤い
 
 // server: 保存済みの注文（id→注文）。pend: まだ送れていない変更（id→差分）。
 let server={}, pend={}, online=false, loaded=false, es=null, lastBeat=0, t0=Date.now();
-let ask=null, lastOrder=null, tab='queue', tabAt=0, armAt=0, dblAt=0, stuck=false, pendAt=0, flash={}, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
+let role='pick', ask=null, lastOrder=null, tab='queue', tabAt=0, armAt=0, dblAt=0, stuck=false, pendAt=0, flash={}, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
 
 function loadLocal(){try{const x=JSON.parse(localStorage.getItem(LS)||'null');if(x){if(!BASE)server=x.server||{};pend=x.pend||{}}}catch(e){}}
 function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(BASE?{pend}:{server,pend:{}}))}catch(e){}}
@@ -541,7 +567,38 @@ function renderMode(){
   $('#mode').textContent=t;
   const al=$('#alert');al.textContent=bad;al.hidden=!bad;
 }
-function render(){renderTiles();renderQueue();renderTabs(renderDone(),renderSales());renderMode();renderLast();renderLines()}
+const ROLES=[['cash','会計','注文を聞いて、味と札の番号を押す人'],['order','オーダー管理','作る人に伝えて、できたものを渡す人']];
+function setRole(r){
+  role=ROLES.some(x=>x[0]===r)?r:'pick';dbl=null;ask=null;armCancel=null;
+  try{if(role==='pick')localStorage.removeItem('wataame-cho-next-role');else localStorage.setItem('wataame-cho-next-role',role);history.replaceState(null,'',role==='pick'?location.pathname+location.search:'#'+role)}catch(e){}
+}
+// 最初の画面：どちらの役で使うかを選ぶ。選んだあとは、その役の画面だけになる。
+function renderPick(){
+  put($('#pick'),'<div class="roles"><p>どちらで使いますか</p>'+ROLES.map(r=>'<button class="role" data-act="role" data-id="'+r[0]+'"><b>'+r[1]+'</b><span>'+r[2]+'</span></button>').join('')+'</div>');
+}
+// 会計の人の一覧：入れた注文を新しい順に。入れたかどうかの確認と、入れまちがいの取り消しに使う。
+function renderMine(){
+  const all=list().sort((a,b)=>b.no-a.no).slice(0,60);
+  const LBL={new:'まだ伝えてない',told:'伝えた',done:'渡した',cancel:'取り消した'};
+  put($('#mine'),all.length?'<div class="cap">入れた注文（新しい順）　まちがえたら「取消」</div>'+all.map(o=>{
+    const off=o.status==='cancel';
+    return '<div class="o'+(off||o.status==='done'?' gone':'')+'"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small><span class="st '+esc(o.status)+'">'+LBL[o.status]+'</span>'+(o.kind==='double'?'ダブル　':'')+hms(o.createdAt)+'</small></span><span class="r">'
+      +(off?'<button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button>'
+        :o.status==='done'?''
+        :armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">本当に<br>消す</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(num(o))+'番を取り消す">取消</button>')
+      +'</span></div>';
+  }).join(''):'<div class="none">'+(BASE&&!loaded?'読み込み中':'<strong>まだ注文はありません</strong>札を1枚取って、味を押してください')+'</div>');
+}
+function render(){
+  const app=$('#app');app.dataset.role=role;
+  const rb=$('#rolebtn'),r=ROLES.find(x=>x[0]===role);rb.hidden=!r;if(r)put(rb,r[1]+'<small>変える</small>');
+  $('#helpbtn').hidden=!r;
+  if(role==='pick')renderPick();
+  renderTiles();renderQueue();renderTabs(renderDone(),renderSales());renderMode();renderLast();renderLines();
+  if(role==='cash')renderMine();
+  // 黒い表示は、味ボタンのすぐ上に出す（オーダー管理では画面の下）。
+  app.style.setProperty('--padh',(role==='cash'&&innerWidth<768?$('.pad').offsetHeight:0)+'px');
+}
 // 広い画面の右下に出したままにする表示：直前に入れた注文と、今日の件数・売上。
 function renderLast(){
   let q=0,t=0;live().forEach(o=>{q++;t+=o.total});
@@ -597,7 +654,7 @@ function take(kind,flavors,tag){
     if(ok){lastOrder={no:num(o),label:label(o)};toast(num(o)+'番　'+label(o))}
     else if(maybe){unsure.push(o);toast(label(o)+' が入ったか確認中。つながるまで待ってください',5000)}
     else fail(o);
-    render();if(ok&&tab==='queue')toBottom();
+    render();if(ok&&role==='cash')$('#pane').scrollTop=0;else if(ok&&tab==='queue')toBottom();
   });
 }
 
@@ -607,7 +664,7 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b||b.disabled)return;
   const a=b.dataset.act;let id=b.dataset.id,mk=b.dataset.m;
   // 行が動いた直後：伝える・渡したは、動く前にその位置にあった注文として扱う。戻す・取消は安全側に倒して受け付けない。
-  if(Date.now()<guardUntil&&(a==='told'||a==='give'||a==='undo'||a==='cancel'||a==='cancel2')){
+  if(role==='order'&&Date.now()<guardUntil&&(a==='told'||a==='give'||a==='undo'||a==='cancel'||a==='cancel2')){
     const hit=(a==='told'||a==='give')&&snap.find(i=>i.a===a&&e.clientX>=i.l&&e.clientX<=i.r&&e.clientY>=i.t&&e.clientY<=i.b);
     const o=hit&&list().find(x=>x.id===hit.id);
     if(!o||o.status!==(a==='told'?'new':'told')||flash[o.id])return;
@@ -620,6 +677,8 @@ document.addEventListener('click',e=>{
   }
   else if(a==='k'||a==='kdel'||a==='kok')askKey(a,id);
   else if(a==='askOff'){ask=null;renderAsk()}
+  else if(a==='role'){setRole(id);render();$('#pane').scrollTop=0}
+  else if(a==='roles'){setRole('pick');render();$('#pane').scrollTop=0}
   else if(a==='help'){put($('#helpbody'),HELP);$('#help').hidden=false;$('#helpbody').scrollTop=0}
   else if(a==='helpOff')$('#help').hidden=true;
   else if(a==='dbl'){dbl=dbl?null:[];dblAt=Date.now();renderTiles()}
@@ -669,6 +728,8 @@ document.addEventListener('touchstart',()=>{},{passive:true});
 function awake(){try{if(navigator.wakeLock&&!document.hidden)navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}}
 document.addEventListener('visibilitychange',awake);awake();
 setInterval(tick,1000);
+try{setRole(location.hash.slice(1)||localStorage.getItem('wataame-cho-next-role'))}catch(e){}
+window.addEventListener('resize',render);
 $('#day').textContent=DAYLABEL;
 loadLocal();if(Object.keys(pend).length){stuck=true;pendAt=Date.now()}render();
 $('#pane').addEventListener('scroll',()=>{tabAt=Date.now()},{passive:true});

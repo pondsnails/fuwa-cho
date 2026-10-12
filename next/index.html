@@ -172,7 +172,7 @@ tfoot td{font-weight:700;font-size:18px}
 .app[data-role=order] .board{position:relative;flex:none;display:block;background:var(--panel);border-top:1px solid var(--line);border-bottom:2px solid var(--ink)}
 .mp{display:grid;grid-template-columns:52px minmax(0,1fr) 150px;gap:6px;align-items:center;height:84px;padding:0 10px 0 0;border-bottom:1px solid var(--line)}
 .mp:last-of-type{border-bottom:0}
-/* 作っている人の枠：右端に小さく「待ちに戻す」。頼む相手をまちがえたとき用で、ふだんは押さない。 */
+/* 作っている人の枠：右端に小さく「頼むのをやめる」。頼む相手をまちがえたとき用で、ふだんは押さない。 */
 .mp .txt.back2{height:62px;padding:0;font-size:11px;line-height:1.3;color:var(--muted);text-align:center;white-space:nowrap}
 .mp .ml{font-size:30px;font-weight:700;text-align:center;color:var(--blue)}
 .mp .mi{min-width:0}
@@ -595,7 +595,7 @@ function renderQueue(){
     const jobs=all.filter(o=>o.status==='told'&&o.maker===m).sort((a,b)=>(a.toldAt||0)-(b.toldAt||0));
     // 作る人に頼むのは1件ずつ。2件以上あるのは、たいてい押しまちがい。赤い枠にして、その場で直せるようにする。
     if(jobs.length>1){
-      return '<div class="mp2"><p><b class="ml">'+m+'</b>'+jobs.length+'件 頼んであります。ふつうは1件です</p>'+jobs.map(o=>'<div class="j2"><strong>'+esc(num(o))+'</strong><span>'+dots(o)+esc(fl(o))+'</span><button class="mb sm" data-act="unassign" data-id="'+esc(o.id)+'">待ちに戻す</button><button class="mb sm" data-act="give" data-id="'+esc(o.id)+'">渡した</button></div>').join('')+'</div>';
+      return '<div class="mp2"><p><b class="ml">'+m+'</b>'+jobs.length+'件 頼んであります。ふつうは1件です</p>'+jobs.map(o=>'<div class="j2"><strong>'+esc(num(o))+'</strong><span>'+dots(o)+esc(fl(o))+'</span><button class="mb sm" data-act="unassign" data-id="'+esc(o.id)+'">頼むのをやめる</button><button class="mb sm" data-act="give" data-id="'+esc(o.id)+'">渡した</button></div>').join('')+'</div>';
     }
     if(jobs.length){
       const o=jobs[0],min=Math.floor((now-(o.toldAt||now))/60000);
@@ -622,13 +622,13 @@ function renderDone(){
   if(log)moved('done',g.slice(0,200).map(o=>o.id),false);
   const row=(o,sub,btn)=>'<div class="o"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+sub+'</small></span><span class="r">'+btn+'</span></div>';
   const t=all.filter(o=>o.status==='told').sort((a,b)=>(a.toldAt||0)-(b.toldAt||0)),w=waiting();
-  put($('#fix'),(t.length?'<div class="cap">作っている注文</div>'+t.map(o=>row(o,esc(o.maker||'?')+' が作っている','<button class="link" data-act="unassign" data-id="'+esc(o.id)+'">待ちに戻す</button>')).join(''):'')
+  put($('#fix'),(t.length?'<div class="cap">作っている注文</div>'+t.map(o=>row(o,esc(o.maker||'?')+' が作っている','<button class="link" data-act="unassign" data-id="'+esc(o.id)+'">頼むのをやめる</button>')).join(''):'')
     +(w.length?'<div class="cap">待っている注文</div>'+w.slice(0,100).map(o=>row(o,hm(o.createdAt)+' に注文',armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">本当に<br>消す</button>':'<button class="link" data-act="cancel" data-id="'+esc(o.id)+'">取消</button>')).join(''):''));
-  put($('#done'),g.length?'<div class="cap">渡した注文（新しい順）</div>'+g.slice(0,200).map(o=>'<div class="o"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+esc(o.maker||'?')+'　'+hm(o.doneAt)+' に渡した</small></span><span class="r"><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button></span></div>').join('')
+  put($('#done'),g.length?'<div class="cap">渡した注文（新しい順）</div>'+g.slice(0,200).map(o=>'<div class="o"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+esc(o.maker||'?')+'　'+hm(o.doneAt)+' に渡した</small></span><span class="r"><button class="link" data-act="undo" data-id="'+esc(o.id)+'">渡す前に戻す</button></span></div>').join('')
     :'');
   // 取り消した注文は専用のタブに残す。番号が飛んで見える理由が分かり、まちがって消したときに戻せる。
   const c=all.filter(o=>o.status==='cancel').sort((a,b)=>(b.cancelAt||0)-(a.cancelAt||0));
-  put($('#gone'),c.length?'<div class="cap">取り消した注文</div>'+c.slice(0,300).map(o=>'<div class="o gone"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+(o.cancelAt?hm(o.cancelAt)+' に取消':'取消')+'</small></span><span class="r"><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button></span></div>').join(''):'');
+  put($('#gone'),c.length?'<div class="cap">取り消した注文</div>'+c.slice(0,300).map(o=>'<div class="o gone"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+(o.cancelAt?hm(o.cancelAt)+' に取消':'取消')+'</small></span><span class="r"><button class="link" data-act="undo" data-id="'+esc(o.id)+'">取消をやめる</button></span></div>').join(''):'');
   return g.length;
 }
 function renderSales(){
@@ -684,7 +684,7 @@ function renderMine(){
   put($('#mine'),all.length?'<div class="cap">入れた注文（新しい順）　まちがえたら「取消」</div>'+all.map(o=>{
     const off=o.status==='cancel';
     return '<div class="o'+(off||o.status==='done'?' gone':'')+'"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small><span class="st '+esc(o.status)+'">'+LBL[o.status]+'</span>'+(o.kind==='double'?'ダブル　':'')+hms(o.createdAt)+' に入れた</small></span><span class="r">'
-      +(off?'<button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button>'
+      +(off?'<button class="link" data-act="undo" data-id="'+esc(o.id)+'">取消をやめる</button>'
         :o.status==='done'?''
         :armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">本当に<br>消す</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(num(o))+'番を取り消す">取消</button>')
       +'</span></div>';
@@ -823,13 +823,13 @@ document.addEventListener('click',e=>{
     const u=lastAct,o=u&&list().find(x=>x.id===u.id);lastAct=null;
     if(o&&o.status===u.now){patchOrder(u.id,u.patch);toast(num(o)+'番を元に戻した')}else render();
   }
-  else if(a==='unassign'){const o=list().find(x=>x.id===id);if(!o||o.status!=='told')return;patchOrder(id,{status:'new',maker:null});toast(num(o)+'番を待ちに戻した')}
+  else if(a==='unassign'){const o=list().find(x=>x.id===id);if(!o||o.status!=='told')return;patchOrder(id,{status:'new',maker:null});toast(num(o)+'番を頼むのをやめた')}
   else if(a==='rest'){const m=b.dataset.m;rest[m]=!rest[m];try{localStorage.setItem('wataame-cho-next-rest',JSON.stringify(rest))}catch(e){}render()}
   else if(a==='undo'){
     // 1つ前の段階に戻す。渡した → まだ渡してない、まだ渡してない → まだ伝えてない。取り消した注文は、取り消す前の状態に戻す。
     const o=list().find(x=>x.id===id);
     const to=!o?'new':o.status==='done'?'told':o.status==='cancel'?(o.was==='told'?'told':'new'):'new';
-    patchOrder(id,{status:to});toast((o?num(o)+'番を':'')+(to==='told'?'作っているところに戻した':'待ちに戻した'));
+    patchOrder(id,{status:to});toast((o?num(o)+'番を':'')+(o&&o.status==='done'?'渡す前に戻した':o&&o.status==='cancel'?'取消をやめた':'待ちに戻した'));
   }
   else if(a==='cancel'){armCancel=id;armAt=Date.now();render();setTimeout(()=>{if(armCancel===id){armCancel=null;render()}},5000)}
   else if(a==='cancel2'){

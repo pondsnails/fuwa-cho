@@ -48,6 +48,7 @@ main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;oversc
 .o .no{font-weight:700;font-size:22px;font-variant-numeric:tabular-nums}
 .o .nm{font-weight:600;font-size:15px;overflow-wrap:anywhere}
 .o .nm small{display:block;font-weight:400;font-size:11px;color:var(--muted)}
+.o .st.new,.o .st.told{font-size:10px;padding:0 4px}
 .o .nm small.late{color:var(--danger);font-weight:700}
 .o .r{display:flex;gap:5px;align-items:center}
 /* 伝えた行：押したボタンの側から青が広がり、押した文字だけ白抜きでその場に残る。少し見せてから畳む。 */
@@ -168,7 +169,7 @@ tfoot td{font-weight:700;font-size:18px}
 /* 役割で画面を分ける。会計は「味を押す」と自分が入れた注文だけ。オーダー管理は一覧だけで、味のボタンは出さない。 */
 /* オーダー管理の上半分：A・B・C の枠。位置は動かない。作っている人には「渡した」、空いた人には「次を頼む」。 */
 .board{display:none}
-.app[data-role=order] .board{flex:none;display:block;background:var(--panel);border-top:1px solid var(--line);border-bottom:2px solid var(--ink)}
+.app[data-role=order] .board{position:relative;flex:none;display:block;background:var(--panel);border-top:1px solid var(--line);border-bottom:2px solid var(--ink)}
 .mp{display:grid;grid-template-columns:52px minmax(0,1fr) 150px;gap:6px;align-items:center;height:84px;padding:0 10px 0 0;border-bottom:1px solid var(--line)}
 .mp:last-of-type{border-bottom:0}
 /* 作っている人の枠：右端に小さく「待ちに戻す」。頼む相手をまちがえたとき用で、ふだんは押さない。 */
@@ -206,14 +207,18 @@ tfoot td{font-weight:700;font-size:18px}
 .o.w .r{gap:6px}
 .o.w .mk{width:48px;height:42px}
 .mp.emp .ml{color:var(--muted)}
-.o.w .ago{font-size:13px;min-width:2.6em;text-align:right;color:var(--muted);padding-right:4px}
+.mp.emp{height:44px}
+.mp.emp .ml{font-size:24px}
+.mp.emp .idle{font-size:15px}
+.o.w .ago{font-size:13px;min-width:2.6em;text-align:right;color:var(--danger);font-weight:700;padding-right:4px}
 .o.w .x{height:38px}
 .o.w.old .ago{color:var(--danger);font-weight:700}
 /* オーダー管理のいちばん下の帯。渡した注文と取り消した注文は、ここから開く。主役は上の割り振りなので、小さく置く。 */
 .more{display:none}
-.act{display:flex;align-items:center;gap:8px;height:46px;padding:0 8px 0 14px;background:var(--strip);border-top:1px solid var(--line)}
+/* 直前の操作と「元に戻す」。したあとの数秒だけ、待ちの見出しの上に重ねて出す（下の行は動かない）。 */
+.act{position:absolute;left:0;right:0;top:100%;z-index:2;display:flex;align-items:center;gap:8px;height:41px;padding:0 6px 0 14px;background:var(--strip);border-bottom:1px solid var(--line)}
 .act .la{flex:1;min-width:0;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.act .ub{height:36px;padding:0 14px;border:1px solid var(--blue);border-radius:3px;background:var(--panel);color:var(--blue);font-size:14px;font-weight:700}
+.act .ub{height:34px;padding:0 14px;border:1px solid var(--blue);border-radius:3px;background:var(--panel);color:var(--blue);font-size:14px;font-weight:700}
 .act .ub:active{background:var(--blue);color:#fff}
 .capq{display:flex;align-items:center;justify-content:space-between;padding-top:0;padding-bottom:0;padding-right:4px}
 .capq button{height:40px;padding:0 10px;color:var(--blue);font-size:13px}
@@ -232,6 +237,9 @@ tfoot td{font-weight:700;font-size:18px}
 .rsw button:active{background:#d9eff9}
 .rsw button.on{background:var(--blue);color:#fff;font-weight:700}
 header .helpbtn{margin-left:2px}
+.app[data-role=cash] header h1,.app[data-role=order] header h1{display:none}
+.mrow{display:block;width:100%;height:60px;padding:0 18px;border-bottom:1px solid var(--line);background:var(--panel);font-size:17px;font-weight:600;text-align:left;color:var(--ink)}
+.mrow:active{background:#d9eff9}
 .roles{display:grid;gap:10px;max-width:560px;margin:0 auto;padding:16px 12px}
 .roles p{margin:0 2px 2px;font-size:15px;font-weight:700}
 .role{display:block;width:100%;padding:16px 16px 14px;text-align:left;background:var(--panel);border:1px solid var(--blue);border-bottom-width:4px;border-radius:3px}
@@ -336,7 +344,7 @@ main{min-height:64px}
 </head>
 <body>
 <div class="app" id="app" data-role="pick">
-  <header><h1>わたあめ帳<span id="day"></span></h1><span class="mode" id="mode"></span><nav class="rsw" id="rsw" aria-label="役の切り替え" hidden></nav><button class="helpbtn" id="sumbtn" data-act="sum">集計</button><button class="helpbtn" id="helpbtn" data-act="help">使い方</button></header>
+  <header><h1>わたあめ帳<span id="day"></span></h1><span class="mode" id="mode"></span><nav class="rsw" id="rsw" aria-label="役の切り替え" hidden></nav><button class="helpbtn" id="menubtn" data-act="menu">メニュー</button></header>
   <div class="alert" id="alert" role="alert" hidden></div>
   <div class="board" id="board"></div>
   <main id="pane">
@@ -347,7 +355,6 @@ main{min-height:64px}
   <nav class="more" id="more" aria-label="渡した注文と取り消した注文"></nav>
 
   <div class="pad">
-    <div class="how"><b>1</b>注文された味を押す</div>
     <div class="lines"><div class="lastline" id="lastline"></div></div>
     <div class="tiles" id="tiles"></div>
     <div class="last" id="last"></div>
@@ -373,6 +380,13 @@ main{min-height:64px}
     <header><h1 id="logTitle"></h1><button class="helpbtn" data-act="logOff">とじる</button></header>
     <div class="body"><div id="fix"></div><div id="done"></div><div id="gone"></div></div>
     <div class="foot"><button class="back" data-act="logOff">とじる</button></div>
+  </div>
+</div>
+
+<div class="sheet" id="menu" role="dialog" aria-label="メニュー" hidden>
+  <div class="box">
+    <header><h1>メニュー</h1><button class="helpbtn" data-act="menuOff">とじる</button></header>
+    <div class="body"><button class="mrow" data-act="sum">集計</button><button class="mrow" data-act="help">使い方</button></div>
   </div>
 </div>
 
@@ -590,13 +604,13 @@ function renderQueue(){
         +'<button class="mb" data-act="give" data-id="'+esc(o.id)+'" aria-label="'+esc(num(o))+'番を渡した">渡した</button></div>';
     }
     return '<div class="mp emp"><b class="ml">'+m+'</b><div class="mi"><span class="idle">空き</span></div><span></span></div>';
-  }).join('')+'<div class="act"><span class="la">'+(lastAct?esc(lastAct.text):'')+'</span>'+(lastAct?'<button class="ub" data-act="back">元に戻す</button>':'')+'</div>');
-  const cap='<div class="cap capq"><span>待ち '+w.length+'件'+(w.length?'（古い順）':'')+'</span><button data-act="log" data-id="all">注文一覧</button></div>';
+  }).join('')+(lastAct&&now-lastAct.at<6000?'<div class="act"><span class="la">'+esc(lastAct.text)+'</span><button class="ub" data-act="back">元に戻す</button></div>':''));
+  const cap='<div class="cap capq"><span>待ち '+w.length+'件</span><button data-act="log" data-id="all">注文一覧</button></div>';
   // 下：待ちの列
   // 頼むのは注文の行で。空いている人のボタンだけが出るので、順番を飛ばすときも、その行で押すだけ。
   put($('#queue'),w.length?cap+w.slice(0,100).map(o=>{
       const min=Math.floor((now-o.createdAt)/60000),late=now-o.createdAt>LATE;
-      return '<div class="o w'+(late?' old':'')+'"><span class="no">'+esc(num(o))+'</span><span class="nm">'+dots(o)+esc(fl(o))+'</span><span class="r"><span class="ago">'+(min<1?'いま':min+'分')+'</span>'
+      return '<div class="o w'+(late?' old':'')+'"><span class="no">'+esc(num(o))+'</span><span class="nm">'+esc(fl(o))+'</span><span class="r">'+(min>=10?'<span class="ago">'+min+'分</span>':'')
         +free.map(m=>'<button class="mk" data-act="assign" data-m="'+m+'" data-id="'+esc(o.id)+'" aria-label="'+esc(num(o))+'番を'+m+'に頼む">'+m+'</button>').join('')+'</span></div>';
     }).join('')
     :cap+'<div class="none">'+(BASE&&!loaded?'読み込み中':'<strong>待っている注文はありません</strong>')+'</div>');
@@ -681,7 +695,7 @@ function render(){
   const app=$('#app');app.dataset.role=role;app.dataset.tab=tab;
   const rb=$('#rsw'),r=ROLES.find(x=>x[0]===role);rb.hidden=!r;
   if(r)put(rb,ROLES.map(x=>'<button data-act="role" data-id="'+x[0]+'"'+(x[0]===role?' class="on" aria-current="true"':'')+'>'+x[1]+'</button>').join(''));
-  $('#helpbtn').hidden=!r;$('#sumbtn').hidden=!r;
+  $('#menubtn').hidden=!r;
   if(role==='pick')renderPick();
   renderTiles();renderQueue();renderTabs(renderDone(),renderSales());renderMode();renderLast();renderLines();
   if(role==='cash')renderMine();
@@ -758,7 +772,7 @@ function take(kind,flavors,tag){
 }
 
 document.addEventListener('click',e=>{
-  if(e.target.id==='help'||e.target.id==='sum'){e.target.hidden=true;return}
+  if(e.target.id==='help'||e.target.id==='sum'||e.target.id==='menu'){e.target.hidden=true;return}
   if(e.target.id==='log'){log=null;e.target.hidden=true;return}
   if(e.target.id==='ask'){ask=null;renderAsk();return}
   const b=e.target.closest('[data-act]');if(!b||b.disabled)return;
@@ -779,9 +793,11 @@ document.addEventListener('click',e=>{
   else if(a==='askOff'){ask=null;renderAsk()}
   else if(a==='role'){if(id===role)return;setRole(id);tab='queue';render();$('#pane').scrollTop=0}
   else if(a==='roles'){setRole('pick');render();$('#pane').scrollTop=0}
-  else if(a==='help'){put($('#helpbody'),helpText());$('#help').hidden=false;$('#helpbody').scrollTop=0}
+  else if(a==='menu')$('#menu').hidden=false;
+  else if(a==='menuOff')$('#menu').hidden=true;
+  else if(a==='help'){$('#menu').hidden=true;put($('#helpbody'),helpText());$('#help').hidden=false;$('#helpbody').scrollTop=0}
   else if(a==='helpOff')$('#help').hidden=true;
-  else if(a==='sum'){render();$('#sum').hidden=false}
+  else if(a==='sum'){$('#menu').hidden=true;render();$('#sum').hidden=false}
   else if(a==='sumOff')$('#sum').hidden=true;
   else if(a==='log'){log=id;render();$('#log').hidden=false;$('#log .body').scrollTop=0}
   else if(a==='logOff'){log=null;$('#log').hidden=true}
@@ -793,7 +809,7 @@ document.addEventListener('click',e=>{
     if(navigator.vibrate)navigator.vibrate(30);
     gave[id]=Date.now();if(o.maker)lockUntil[o.maker]=Date.now()+700;
     setTimeout(()=>{if(gave[id]&&Date.now()-gave[id]>=3900){delete gave[id];render()}},4100);
-    lastAct={id,now:'done',patch:{status:'told'},text:num(o)+'番を渡した'};patchOrder(id,{status:'done',doneAt:Date.now()});
+    lastAct={id,now:'done',patch:{status:'told'},text:num(o)+'番を渡した',at:Date.now()};setTimeout(render,6100);patchOrder(id,{status:'done',doneAt:Date.now()});
   }
   else if(a==='ungive'){const o=list().find(x=>x.id===id);delete gave[id];patchOrder(id,{status:'told'});toast((o?num(o)+'番を':'')+'作っているところに戻した')}
   else if(a==='assign'){
@@ -801,7 +817,7 @@ document.addEventListener('click',e=>{
     const m=b.dataset.m,o=list().find(x=>x.id===id);
     if(!o||o.status!=='new'){render();return}
     if(navigator.vibrate)navigator.vibrate(40);
-    lastAct={id,now:'told',patch:{status:'new',maker:null},text:num(o)+'番を '+m+' に頼んだ'};patchOrder(id,{status:'told',maker:m,toldAt:Date.now()});
+    lastAct={id,now:'told',patch:{status:'new',maker:null},text:num(o)+'番を '+m+' に頼んだ',at:Date.now()};setTimeout(render,6100);patchOrder(id,{status:'told',maker:m,toldAt:Date.now()});
   }
   else if(a==='back'){
     // 直前にやったことを元に戻す。そのあと別の端末で状態が変わっていたら、何もしない。

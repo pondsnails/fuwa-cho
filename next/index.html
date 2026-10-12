@@ -98,6 +98,9 @@ main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;oversc
 .card .top{display:flex;align-items:baseline;justify-content:space-between;gap:6px;padding:8px 10px 0}
 .card .no{font-size:32px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
 .card .ago{font-size:11px;color:var(--muted)}
+/* 伝えた相手（A・B・C）。取りに行く先なので、番号と同じくらい目立たせる。伝えるボタンと同じ青い四角。 */
+.card .top{align-items:center}
+.card .who{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:3px;background:var(--blue);color:#fff;font-size:24px;font-weight:700}
 .card .fl{padding:2px 10px 8px;font-size:16px;font-weight:600;overflow-wrap:anywhere}
 .card .fl small{display:block;font-size:11px;font-weight:400;color:var(--muted)}
 .card .acts{display:flex;margin-top:auto;border-top:1px solid rgba(0,0,0,.08)}
@@ -371,8 +374,8 @@ function viewTell(now){
   }).join('');
 }
 function card(o,now){
-  return '<div class="card told"><div class="top"><span class="no">'+esc(o.no)+'</span><span class="ago">'+esc(o.maker||'?')+'　'+ago(o.toldAt||o.createdAt,now)+'</span></div>'
-    +'<div class="fl">'+dots(o)+esc(fl(o))+(o.kind==='double'?'<small>ダブル</small>':'')+'</div>'
+  return '<div class="card told"><div class="top"><span class="no">'+esc(o.no)+'</span><span class="who">'+esc(o.maker||'?')+'</span></div>'
+    +'<div class="fl">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+esc(o.maker||'?')+(now-(o.toldAt||o.createdAt)<60000?' に伝えたところ':' に伝えて '+Math.floor((now-(o.toldAt||o.createdAt))/60000)+'分')+'</small></div>'
     +'<div class="acts"><button class="back" data-act="set" data-to="new" data-id="'+esc(o.id)+'">戻す</button><button class="go" data-act="set" data-to="done" data-id="'+esc(o.id)+'">渡した</button></div></div>';
 }
 // お渡し：作る人に伝えてあって、まだ渡していない注文。券の番号を見て、味を確かめて渡す。券をなくした人は、味と頃合いからここで探す。

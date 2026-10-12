@@ -1,10 +1,11 @@
 // Firebase Realtime Database（REST + EventSource）の代わりをするローカルサーバー。動作確認用。
 // 使い方: node tools/mock.js → http://localhost:8791/
 //   /__net?off=1 で電波断、/__net?off=0 で復帰、/__dump で保存内容
+//   /__net?hold=1 で「書き込みは通るが返事が返らない」状態（電波が遅いときの再現）、/__net?hold=0 で戻す
 //   RESET_IN=9000 を付けると、9:15のリセットを「ページを開いて9秒後」に置き換える
 const http=require('http'),fs=require('fs'),path=require('path');
 const PORT=8791,HTML=process.argv[2]||path.join(__dirname,'..','index.html'),RESET_IN=Number(process.env.RESET_IN)||0;
-let tree={},subs=[],off=false;
+let tree={},subs=[],off=false,hold=false;
 const walk=(p,make)=>{let t=tree;for(const s of p){if(t[s]==null||typeof t[s]!=='object'){if(!make)return undefined;t[s]={}}t=t[s]}return t};
 const get=p=>{let t=tree;for(const s of p){if(t==null)return null;t=t[s]}return t===undefined?null:t};
 const set=(p,v)=>{const par=walk(p.slice(0,-1),true);if(v===null)delete par[p[p.length-1]];else par[p[p.length-1]]=v};
@@ -17,7 +18,7 @@ function page(){
 http.createServer((q,r)=>{
   const u=new URL(q.url,'http://x');
   if(u.pathname==='/'){r.writeHead(200,{'content-type':'text/html; charset=utf-8'});return r.end(page())}
-  if(u.pathname==='/__net'){off=u.searchParams.get('off')==='1';if(off){subs.forEach(s=>s.res.destroy());subs=[]}return r.end(String(off))}
+  if(u.pathname==='/__net'){if(u.searchParams.has('hold')){hold=u.searchParams.get('hold')==='1';return r.end('hold '+hold)}off=u.searchParams.get('off')==='1';if(off){subs.forEach(s=>s.res.destroy());subs=[]}return r.end(String(off))}
   if(u.pathname==='/__dump')return r.end(JSON.stringify(tree,null,1));
   if(off)return q.socket.destroy();
   const p=u.pathname.replace(/^\/db\//,'').replace(/\.json$/,'').split('/').filter(Boolean);
@@ -34,6 +35,7 @@ http.createServer((q,r)=>{
     }else if(q.method==='PATCH'){
       Object.assign(walk(p,true),body);send('patch',p,body);
     }
+    if(hold&&q.method!=='GET')return; // 書き込みは済んだが、返事は返さない
     r.writeHead(200,{'content-type':'application/json'});r.end(JSON.stringify(q.method==='GET'?get(p):body));
   },150));
 }).listen(PORT,()=>console.log('mock on http://localhost:'+PORT+'/'));

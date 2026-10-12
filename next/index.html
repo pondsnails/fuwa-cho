@@ -141,9 +141,9 @@ tfoot td{font-weight:700;font-size:18px}
 
 .pad{flex:none;position:relative;padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px));background:var(--strip);border-top:1px solid var(--line)}
 .last{display:none}
-/* 味ボタンの上の2行。上は待ちの目安（お客さんに伝える数字）、下は直前に入れた注文とそこからの秒数（「入れたっけ」を確かめる）。 */
+/* 味ボタンの上の1行。直前に入れた注文と、そこからの秒数（「入れたっけ」を確かめる）。 */
 .lines{margin:0 2px 8px;font-size:12px;color:var(--muted);white-space:nowrap}
-.waitline,.lastline{display:flex;align-items:baseline;gap:8px;min-height:24px}
+.lastline{display:flex;align-items:baseline;gap:8px;min-height:26px}
 .lines b{font-size:18px;color:var(--ink);font-variant-numeric:tabular-nums}
 .lastline .what{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:15px;font-weight:600;color:var(--ink)}
 .lastline em{font-style:normal;font-size:15px;font-variant-numeric:tabular-nums}
@@ -166,6 +166,18 @@ tfoot td{font-weight:700;font-size:18px}
 /* タブレット・PC（横に広い画面）。お手本のAirレジのiPad画面にならう：
    白い左の列に一覧（下線つきのタブ）、灰色の右の列に味のタイル、見出しは中央。
    右下には客面ディスプレイ風の黒い表示で、直前の注文と今日の合計を出したままにする。スマホの見た目は変えない。 */
+/* 背の低い画面（小さいスマホ、アドレスバーが出ているとき）：一覧が1行も残らなくなるので、下の味ボタンを詰める。 */
+@media (max-height:640px){
+  .pad{padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+  .pad .how{display:none}
+  .lines{margin-bottom:6px}
+  .tiles{gap:6px}
+  .tile{height:54px}
+  .tile.wide{height:44px}
+}
+/* それでも入りきらないほど低いとき（横向きなど）は、味ボタンの側を送れるようにして、ダブルが画面の外に出ないようにする。 */
+main{min-height:64px}
+.pad{flex:0 1 auto;min-height:0;overflow-y:auto}
 @media (min-width:768px) and (min-height:500px){
   .app{display:grid;grid-template-columns:minmax(360px,5fr) 6fr;grid-template-rows:auto auto auto auto minmax(0,1fr);max-width:1180px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
   .app>header{grid-column:1 / -1;grid-row:1;position:relative;height:48px;border-bottom:1px solid var(--line)}
@@ -190,7 +202,11 @@ tfoot td{font-weight:700;font-size:18px}
   .toast:not([hidden]){display:flex;align-items:center;justify-content:center;min-height:126px}
   .last{display:block;margin-top:auto;padding:14px 18px 12px;border-radius:3px;background:#16191c;color:#fff}
   .last small{display:block;font-size:12px;opacity:.65}
-  .last .l1{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 14px;min-height:62px}
+  .last .l1{display:none}
+  .last .l2{margin-top:0;padding-top:0;border-top:0}
+  .lines{font-size:14px}
+  .lines b{font-size:26px}
+  .lastline .what,.lastline em{font-size:19px}
   .last .l1 small{flex:0 0 100%}
   .last .l1 b{font-size:40px;line-height:1.15;font-variant-numeric:tabular-nums}
   .last .l1 span{font-size:21px;font-weight:600}
@@ -223,7 +239,7 @@ tfoot td{font-weight:700;font-size:18px}
   <div class="pad">
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
     <div class="how"><b>1</b>注文された味を押す</div>
-    <div class="lines"><div class="waitline" id="waitline"></div><div class="lastline" id="lastline"></div></div>
+    <div class="lines"><div class="lastline" id="lastline"></div></div>
     <div class="tiles" id="tiles"></div>
     <div class="last" id="last"></div>
   </div>
@@ -271,12 +287,23 @@ const LATE=5*60000; // これより長く未伝達の注文は、時刻を赤い
 
 // server: 保存済みの注文（id→注文）。pend: まだ送れていない変更（id→差分）。
 let server={}, pend={}, online=false, loaded=false, es=null, lastBeat=0, t0=Date.now();
-let lastOrder=null, tab='queue', tabAt=0, stuck=false, pendAt=0, flash={}, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
+let lastOrder=null, tab='queue', tabAt=0, armAt=0, dblAt=0, stuck=false, pendAt=0, flash={}, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
 
 function loadLocal(){try{const x=JSON.parse(localStorage.getItem(LS)||'null');if(x){if(!BASE)server=x.server||{};pend=x.pend||{}}}catch(e){}}
 function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(BASE?{pend}:{server,pend:{}}))}catch(e){}}
 function toast(msg,ms){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{t.hidden=true},ms||1600)}
-function fail(){toast('保存できなかった。電波を確認してもう一度',4000)}
+// 入らなかったと分かっている注文。何が入らなかったかを名前で出す。
+function fail(o){toast((o?label(o)+' は入っていません。':'保存できなかった。')+'電波を確認してもう一度',4000)}
+// 送ったが返事が来なかった注文。入っているかもしれないので、つながり直して一覧を受け取ってから答えを出す。
+// （ここで「失敗」と言い切ると、入っていた注文をもう一度入れて二重になる。）
+let unsure=[];
+function settleUnsure(){
+  if(!unsure.length)return;
+  const inn=[],out=[];
+  unsure.forEach(o=>{const hit=Object.keys(server).map(k=>server[k]).find(x=>x&&x.cid===o.cid);if(hit)inn.push(label(o)+'（'+hit.no+'番）');else out.push(label(o))});
+  unsure=[];
+  toast((inn.length?'入っていました: '+inn.join('、'):'')+(inn.length&&out.length?'　／　':'')+(out.length?'入っていません: '+out.join('、')+'。もう一度押してください':''),6000);
+}
 
 function req(method,path,body,headers){
   const c=new AbortController(),t=setTimeout(()=>c.abort(),5000);
@@ -294,7 +321,7 @@ async function addRemote(o){
   for(let i=0;i<60;i++){
     o.no=no;let r;
     try{r=await req('PUT','/orders/n'+no+'.json',o,{'if-match':'null_etag'})}
-    catch(e){lost();if(++net>=2)throw e;await sleep(500);continue}
+    catch(e){lost();if(++net>=2){e.unsure=true;throw e}await sleep(500);continue}
     if(r.ok){server['n'+no]=Object.assign({},o);return}
     if(r.status===412){
       let cur=null;try{cur=await r.json()}catch(e){}
@@ -322,12 +349,11 @@ async function flush(){
     again=false;
     for(const id of Object.keys(pend)){
       const snap=JSON.stringify(pend[id]);
-      try{
-        const r=await req('PATCH','/orders/'+id+'.json',pend[id]);
-        if(!r.ok)throw new Error('http '+r.status);
-        if(server[id])Object.assign(server[id],JSON.parse(snap));
-        if(JSON.stringify(pend[id])===snap)delete pend[id];else again=true;
-      }catch(e){stuck=true;again=false;lost();break}
+      let r;
+      try{r=await req('PATCH','/orders/'+id+'.json',pend[id])}catch(e){stuck=true;again=false;lost();break}
+      if(!r.ok){stuck=true;again=false;break}
+      if(server[id])Object.assign(server[id],JSON.parse(snap));
+      if(JSON.stringify(pend[id])===snap)delete pend[id];else again=true;
     }
   }while(again);
   if(!Object.keys(pend).length){stuck=false;pendAt=0}
@@ -347,7 +373,7 @@ function connect(){
   if(es)es.close();
   lastBeat=Date.now();
   es=new EventSource(BASE+'/orders.json');
-  es.addEventListener('put',e=>{const m=JSON.parse(e.data);setPath(m.path,m.data);loaded=true;beat();render()});
+  es.addEventListener('put',e=>{const m=JSON.parse(e.data);setPath(m.path,m.data);loaded=true;beat();render();if(m.path==='/')settleUnsure()});
   es.addEventListener('patch',e=>{const m=JSON.parse(e.data);Object.keys(m.data||{}).forEach(k=>setPath(m.path+'/'+k,m.data[k]));beat();render()});
   es.addEventListener('keep-alive',()=>{beat();renderMode()});
   es.onerror=()=>{online=false;renderMode();if(es.readyState===2){const me=es;setTimeout(()=>{if(es===me)connect()},3000)}};
@@ -359,26 +385,27 @@ const fl=o=>flv(o).map(f=>F[f]?F[f].name:f).join('＋');
 const label=o=>(o.kind==='double'?'ダブル ':'')+fl(o);
 const dots=o=>flv(o).map(f=>'<i class="sq" style="background:var('+(F[f]?F[f].c:'--line')+')"></i>').join('');
 
+// 一覧の並びが変わって行が動いたら、そこから少しの間、行のボタン（A・B・C、取消、戻す）を受け付けない。
+// 伝えた行が消えて下の行が繰り上がった瞬間や、もう1台の操作で行がずれた瞬間に押すと、狙ったのと別の注文に当たるため。
+let guardUntil=0;const sig={};
+function moved(key,ids,appendOnly){
+  const prev=sig[key]||'',now=ids.join(',');sig[key]=now;
+  if(prev===now||!prev)return;
+  if(appendOnly&&now.indexOf(prev)===0)return; // 下に足されただけなら、上の行は動いていない
+  guardUntil=Date.now()+450;
+}
 // 中身が変わったときだけ書き換える。他の端末の更新で、押している最中のボタンが作り直されてタップが消えるのを防ぐ。
 function put(el,html){if(el.__h!==html){el.__h=html;el.innerHTML=html}}
 // 直前の注文（いちばん新しい1件）と、そこからの経過。1分までは秒で数える。
 function lastOf(){let m=null;live().forEach(o=>{if(!m||o.createdAt>m.createdAt)m=o});return m}
 function sinceText(ms){const s=Math.max(0,Math.floor(ms/1000));return s<60?s+'秒前':s<3600?Math.floor(s/60)+'分'+(s%60)+'秒前':Math.floor(s/3600)+'時間前'}
-// 待ちの目安：まだ伝えていない件数 ÷ 作る人へ伝える速さ。
-// 速さは直近15分に伝えた数から出す。開店直後などで15分ぶんの実績がまだ無いときは、最初に伝えてからの時間で割る（短すぎると当てにならないので最低2分）。
-function waitText(){
-  const now=Date.now(),all=list(),q=all.filter(o=>o.status==='new').length;
-  const t=all.filter(o=>o.toldAt&&now-o.toldAt<15*60000).map(o=>o.toldAt);
-  const span=t.length?Math.max(now-Math.min(...t),2*60000)/60000:0;
-  return '<span>まだ伝えてない</span><b>'+q+'</b><span>件</span>'+(t.length>=3&&q?'<span>　およその待ち</span><b>'+Math.max(1,Math.round(q/(t.length/span)))+'</b><span>分</span>':'');
-}
 function renderLines(){
   const o=lastOf();
-  put($('#waitline'),waitText());
   put($('#lastline'),o?'<span>直前の注文</span><b>'+esc(o.no)+'番</b><span class="what">'+esc(label(o))+'</span><em id="since"></em>':'<span>直前の注文</span><span class="what">まだありません</span>');
   tick();
 }
 function tick(){
+  if(dbl&&Date.now()-dblAt>20000){dbl=null;renderTiles()}
   const el=$('#since'),o=el&&lastOf();if(!o)return;
   const ms=Date.now()-o.createdAt,t=sinceText(ms);
   if(el.textContent!==t)el.textContent=t;
@@ -408,6 +435,7 @@ function renderQueue(){
   const how='<div class="how"><b>2</b>作る人に声をかけたら、その相手のボタンを押す<small>部室棟側の人から順に A、B、C</small></div>';
   // いちばん古い1件は上に固定し、残りを一覧に並べる。
   const here=tab==='queue',n=w.filter(o=>!flash[o.id]).length;
+  moved('queue',w.map(o=>o.id),true);
   $('#pin').classList.toggle('apart',!here&&w.length>0);
   put($('#pin'),here?how+(w.length?row(w[0],now,w.length>1):'')
     :w.length?'<button class="pinhead" data-act="tab" data-id="queue">伝えてない注文 '+n+'件　次はこれ<span>一覧を見る</span></button>'+row(w[0],now,false):'');
@@ -416,6 +444,7 @@ function renderQueue(){
 }
 function renderDone(){
   const all=list(),d=all.filter(o=>o.status==='told').sort((a,b)=>(b.toldAt||0)-(a.toldAt||0));
+  if(tab==='done')moved('done',d.map(o=>o.id).concat(all.some(o=>o.status==='new')?'pin':''),false);
   put($('#done'),d.length?'<div class="cap">A・B・C を押しまちがえたら「戻す」　注文がちがったら「取消」</div>'+d.slice(0,300).map(o=>'<div class="o"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+hm(o.toldAt)+'</small></span><span class="r"><span class="who">'+esc(o.maker||'?')+'</span><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button>'+(armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">本当に<br>消す</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(o.no)+'番を取り消す">取消</button>')+'</span></div>').join(''):'<div class="none">まだありません</div>');
   // 取り消した注文は専用のタブに残す。番号が飛んで見える理由が分かり、まちがって消したときに戻せる。
   const c=all.filter(o=>o.status==='cancel').sort((a,b)=>(b.cancelAt||0)-(a.cancelAt||0));
@@ -455,7 +484,7 @@ function renderMode(){
   else if(n&&(stuck||Date.now()-pendAt>2500))bad='未送信 '+n+'件　電波が戻ると自動で送ります';
   else if(!loaded&&Date.now()-t0<8000)t='読み込み中';
   else if(n&&online)t='共有中';
-  else if(!loaded||!online)bad='つながらない　再接続中';
+  else if(!loaded||!online)bad=unsure.length?'つながらない　'+unsure.length+'件が入ったか確認中':'つながらない　再接続中';
   else t='共有中';
   $('#mode').textContent=t;
   const al=$('#alert');al.textContent=bad;al.hidden=!bad;
@@ -477,12 +506,16 @@ function take(kind,flavors){
   dbl=null;tab='queue';render();
   if(navigator.vibrate)navigator.vibrate(20);
   chain=chain.then(async()=>{
-    let ok=true;try{await addOrder(o)}catch(e){ok=false}
+    let ok=true,maybe=false;try{await addOrder(o)}catch(e){ok=false;maybe=!!(e&&e.unsure)}
+    // 返事は来なかったが、一覧にはもう届いている（＝入っている）なら、成功として扱う。
+    if(maybe){const hit=Object.keys(server).map(k=>server[k]).find(x=>x&&x.cid===o.cid);if(hit){o.no=hit.no;ok=true;maybe=false}}
     ids.forEach(i=>{
       pendT[i]--;
       if(ok){const k=++seq;doneT[i]={no:o.no,k};setTimeout(()=>{if(doneT[i]&&doneT[i].k===k){delete doneT[i];renderTiles()}},1200)}
     });
-    if(ok){lastOrder={no:o.no,label:label(o)};toast(o.no+'番　'+label(o))}else fail();
+    if(ok){lastOrder={no:o.no,label:label(o)};toast(o.no+'番　'+label(o))}
+    else if(maybe){unsure.push(o);toast(label(o)+' が入ったか確認中。つながるまで待ってください',5000)}
+    else fail(o);
     render();if(ok&&tab==='queue')toBottom();
   });
 }
@@ -494,12 +527,13 @@ document.addEventListener('click',e=>{
   if(a==='pick'){
     // 同じボタンの二重タップ（0.25秒以内）は1回として扱う。
     const now=Date.now();if(lastTap.id===id&&now-lastTap.t<250)return;lastTap={id,t:now};
-    if(dbl){dbl.push(id);if(dbl.length===2)take('double',dbl.slice());else renderTiles()}else take('single',[id])
+    if(dbl){dblAt=Date.now();dbl.push(id);if(dbl.length===2)take('double',dbl.slice());else renderTiles()}else take('single',[id])
   }
   else if(a==='help'){put($('#helpbody'),HELP);$('#help').hidden=false;$('#helpbody').scrollTop=0}
   else if(a==='helpOff')$('#help').hidden=true;
-  else if(a==='dbl'){dbl=dbl?null:[];renderTiles()}
-  else if(a==='tab'){tab=id;tabAt=Date.now();render();$('#pane').scrollTop=0}
+  else if(a==='dbl'){dbl=dbl?null:[];dblAt=Date.now();renderTiles()}
+  else if(a==='tab'){tab=id;tabAt=Date.now();sig.done='';render();$('#pane').scrollTop=0}
+  else if((a==='told'||a==='undo'||a==='cancel'||a==='cancel2')&&Date.now()<guardUntil)return;
   else if(a==='told'){
     // 押した行をしばらく青く残して、誰に伝えたかを見せてから伝達済みへ送る。
     const m=b.dataset.m,o=list().find(x=>x.id===id);
@@ -510,9 +544,16 @@ document.addEventListener('click',e=>{
     toast((o?o.no+'番　':'')+m+' に伝えた');
     patchOrder(id,{status:'told',maker:m,toldAt:Date.now()});
   }
-  else if(a==='undo'){const o=list().find(x=>x.id===id);patchOrder(id,{status:'new'});toast((o?o.no+'番を':'')+'「まだ伝えてない」に戻した')}
-  else if(a==='cancel'){armCancel=id;render();setTimeout(()=>{if(armCancel===id){armCancel=null;render()}},3000)}
-  else if(a==='cancel2'){const o=list().find(x=>x.id===id);armCancel=null;patchOrder(id,{status:'cancel',cancelAt:Date.now()});toast((o?o.no+'番を':'')+'取り消した')}
+  else if(a==='undo'){
+    // 伝えた → まだ伝えてない。取り消した注文は、取り消す前の状態（伝えてあったなら「伝えた」）に戻す。
+    const o=list().find(x=>x.id===id),to=o&&o.status==='cancel'&&o.was==='told'?'told':'new';
+    patchOrder(id,{status:to});toast((o?o.no+'番を':'')+(to==='told'?'「伝えた」に戻した':'「まだ伝えてない」に戻した'));
+  }
+  else if(a==='cancel'){armCancel=id;armAt=Date.now();render();setTimeout(()=>{if(armCancel===id){armCancel=null;render()}},3000)}
+  else if(a==='cancel2'){
+    if(Date.now()-armAt<400)return;
+    const o=list().find(x=>x.id===id);armCancel=null;patchOrder(id,{status:'cancel',cancelAt:Date.now(),was:o?o.status:'new'});toast((o?o.no+'番を':'')+'取り消した');
+  }
 });
 
 // 日付をまたいだら、開いたままの画面もその場で新しい箱に切り替える（再読み込みはしない）。
@@ -527,7 +568,7 @@ function rollover(){
 }
 function wake(){
   if(rollover()||!BASE)return;
-  if(!es||es.readyState===2||Date.now()-lastBeat>45000)connect();
+  connect(); // 画面に戻ってきたら必ずつなぎ直す。見た目は生きていても、寝ている間に切れていることがある。
   flush();
 }
 // iOSは touchstart を聞いていないと :active（押した瞬間の塗りつぶし）が効かない。
@@ -539,12 +580,14 @@ setInterval(tick,1000);
 $('#day').textContent=DAYLABEL;
 loadLocal();if(Object.keys(pend).length){stuck=true;pendAt=Date.now()}render();
 $('#pane').addEventListener('scroll',()=>{tabAt=Date.now()},{passive:true});
+// 画面のどこかをさわっている間は、自動で切り替えない。
+document.addEventListener('pointerdown',()=>{tabAt=Date.now()},{passive:true});
 // 伝達済み・集計を開いたまま15秒さわらなければ、未伝達があるときは未伝達に戻す。
-setInterval(()=>{if(tab!=='queue'&&tab!=='help'&&Date.now()-tabAt>15000&&list().some(o=>o.status==='new')){tab='queue';render();$('#pane').scrollTop=0}},3000);
+setInterval(()=>{if(tab!=='queue'&&tab!=='help'&&!armCancel&&Date.now()-tabAt>15000&&list().some(o=>o.status==='new')){tab='queue';render();$('#pane').scrollTop=0}},3000);
 if(BASE){
   connect();
   // Firebaseは30秒ごとに keep-alive を送る。途絶えたらつなぎ直す。
-  setInterval(()=>{if(rollover())return;if(Date.now()-lastBeat>75000){online=false;connect()}flush();render()},15000);
+  setInterval(()=>{if(rollover())return;if(Date.now()-lastBeat>45000){online=false;connect()}flush();render()},15000);
   setInterval(rollover,2000);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)wake()});
   window.addEventListener('online',wake);

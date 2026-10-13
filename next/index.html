@@ -184,6 +184,7 @@ tfoot td{font-weight:700;font-size:18px}
 .mb{height:62px;padding:0 6px;border:1px solid var(--blue);border-bottom-width:4px;border-radius:3px;background:var(--panel);color:var(--blue);font-weight:700;font-size:18px;white-space:nowrap;overflow:hidden}
 .mb:active{background:var(--blue);color:#fff}
 /* 空いている人の枠は、薄い青の地に青い塗りのボタン。「この人に次を頼める」がいちばん目に入るようにする。 */
+.mb.give{font-size:15px;line-height:1.35}
 .mb.go{background:var(--blue);color:#fff;font-size:15px}
 .mb.go:active{background:var(--blue-press);border-color:var(--blue-press)}
 .mb.go small{display:block;margin-top:1px;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis}
@@ -600,7 +601,7 @@ function renderQueue(){
     if(jobs.length){
       const o=jobs[0],min=Math.floor((now-(o.toldAt||now))/60000);
       return '<div class="mp"><b class="ml">'+m+'</b><div class="mi"><strong>'+esc(num(o))+'</strong><span>'+dots(o)+esc(fl(o))+'</span></div>'
-        +'<button class="mb" data-act="give" data-id="'+esc(o.id)+'" aria-label="'+esc(num(o))+'番を渡した">渡した</button></div>';
+        +'<button class="mb give" data-act="give" data-id="'+esc(o.id)+'" aria-label="'+esc(num(o))+'番をお客さんに渡した">'+esc(num(o))+'番を<br>お客さんに渡した</button></div>';
     }
     return '<div class="mp emp"><b class="ml">'+m+'</b><div class="mi"><span class="idle">空き</span></div><span></span></div>';
   }).join('')+(lastAct&&now-lastAct.at<6000?'<div class="act"><span class="la">'+esc(lastAct.text)+'</span><button class="ub" data-act="back">元に戻す</button></div>':''));
@@ -808,7 +809,7 @@ document.addEventListener('click',e=>{
     if(navigator.vibrate)navigator.vibrate(30);
     gave[id]=Date.now();if(o.maker)lockUntil[o.maker]=Date.now()+700;
     setTimeout(()=>{if(gave[id]&&Date.now()-gave[id]>=3900){delete gave[id];render()}},4100);
-    lastAct={id,now:'done',patch:{status:'told'},text:num(o)+'番を渡した',at:Date.now()};setTimeout(render,6100);patchOrder(id,{status:'done',doneAt:Date.now()});
+    lastAct={id,now:'done',patch:{status:'told'},text:num(o)+'番をお客さんに渡した',at:Date.now()};setTimeout(render,6100);patchOrder(id,{status:'done',doneAt:Date.now()});
   }
   else if(a==='ungive'){const o=list().find(x=>x.id===id);delete gave[id];patchOrder(id,{status:'told'});toast((o?num(o)+'番を':'')+'作っているところに戻した')}
   else if(a==='assign'){

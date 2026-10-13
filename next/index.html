@@ -58,7 +58,7 @@ main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;oversc
    前は青い塗りつぶしが行の数×3個並んで、画面でいちばん強い色になっていた。 */
 .mk{display:inline-flex;align-items:center;justify-content:center;width:46px;height:44px;border:1px solid var(--blue);border-bottom-width:3px;border-radius:3px;background:var(--panel);color:var(--blue);font-weight:700;font-size:17px}
 .mk:active{background:var(--blue);color:#fff}
-.x{display:inline-block;width:42px;height:44px;color:var(--muted);font-size:12px}
+.x{display:inline-block;width:52px;height:40px;border:1px solid #8a949b;border-radius:3px;color:var(--ink);font-size:13px}
 /* 「渡した」。A・B・C と同じ作りの、横長のボタン。 */
 .link.sm{padding:0 4px;font-size:12px;color:var(--muted)}
 .x:active,.link:active{background:#d9eff9;border-radius:3px}
@@ -320,7 +320,7 @@ main{min-height:64px}
 <!-- 渡した注文／取り消した注文。ふだんは見ない。押しまちがいを戻すときだけ、下の帯から開く。 -->
 <div class="sheet" id="log" role="dialog" aria-label="渡した注文・取り消した注文" hidden>
   <div class="box">
-    <header><h1>注文一覧</h1><button class="helpbtn" data-act="logOff">とじる</button></header>
+    <header><h1>注文を直す</h1><button class="helpbtn" data-act="logOff">とじる</button></header>
     <div class="body"><div id="fix"></div><div id="done"></div><div id="gone"></div></div>
     <div class="foot"><button class="back" data-act="logOff">とじる</button></div>
   </div>
@@ -540,8 +540,8 @@ function renderQueue(){
         +'<button class="mb give" data-act="give" data-id="'+esc(o.id)+'" aria-label="'+esc(num(o))+'番 '+esc(o.kind==='double'?'ダブル':fl(o))+'を渡した">'+esc(num(o))+'番 '+esc(o.kind==='double'?'ダブル':fl(o))+'<br>渡した</button></div>';
     }
     return '<div class="mp emp"><b class="ml">'+m+'</b><div class="mi"><span class="idle">空き</span></div><span></span></div>';
-  }).join('')+(lastAct&&now-lastAct.at<6000?'<div class="act"><span class="la">'+esc(lastAct.text)+'</span><button class="ub" data-act="back">元に戻す</button></div>':''));
-  const cap='<div class="cap capq"><span>待ち '+w.length+'件</span><button data-act="log" data-id="all">注文一覧</button></div>';
+  }).join('')+(lastAct&&now-lastAct.at<10000?'<div class="act"><span class="la">'+esc(lastAct.text)+'</span><button class="ub" data-act="back">元に戻す</button></div>':''));
+  const cap='<div class="cap capq"><span>待ち '+w.length+'件</span><button data-act="log" data-id="all">一覧・直す</button></div>';
   // 下：待ちの列
   // 頼むのは注文の行で。空いている人のボタンだけが出るので、順番を飛ばすときも、その行で押すだけ。
   put($('#queue'),w.length?cap+(free.length?'':'<div class="hint">全員作っています。「渡した」を押すと頼めます</div>')+w.slice(0,100).map(o=>{
@@ -581,12 +581,12 @@ function renderSales(){
 const step=(n,t)=>'<div class="stp"><div class="hs"><b>'+n+'</b><span>'+t+'</span></div></div>';
 const qa=rows=>'<div class="cap">まちがえたら</div><dl class="qa">'+rows.map(r=>'<div><dt>'+r[0]+'</dt><dd>'+r[1]+'</dd></div>').join('')+'</dl>';
 const HELP_CASH='<p class="lead">やることは4つだけ</p>'
-  +step(1,'札を1枚取る')+step(2,'注文された味を押す')+step(3,'札の番号を打って「決定」')+step(4,'札をお客さんに渡す')
-  +qa([['入れた注文をまちがえた','入れた注文の右の「取消」を2回']]);
-const HELP_ORDER='<p class="lead">やることは2つだけ</p>'
-  +step(1,'待ちの注文の右に出ている<br>A・B・C のうち、頼む人のボタンを押す')+step(2,'できて渡したら、<br>その人の枠の「渡した」を押す')
+  +step(1,'札を1枚取る')+step(2,'注文された味を押す<br>（ダブルは「ダブル」を押してから味を2つ）')+step(3,'札の番号を打って「決定」')+step(4,'札をお客さんに渡す')
+  +qa([['入れた注文をまちがえた','右の「取消」を2回'],['取り消したのを戻したい','「取消をやめる」'],['「まだ終わっていません」と出た','札が戻ってきているなら、もう一度「決定」']]);
+const HELP_ORDER='<p class="lead">やることは3つだけ</p>'
+  +step(1,'待ちの注文の右の A・B・C のうち、<br>頼む人のボタンを押す')+step(2,'できたわたあめを持った人の枠の<br>番号を呼ぶ（「24番の方」）')+step(3,'札を受け取って渡し、<br>その枠の「渡した」を押す')
   +'<p class="ht">A・B・C は、作る人を部室棟側から順に。</p>'
-  +qa([['いま押したのをまちがえた','「元に戻す」'],['それより前のもの','「注文一覧」から']]);
+  +qa([['いま押したのをまちがえた','「元に戻す」（10秒間）'],['それより前のもの','「一覧・直す」から']]);
 const helpText=()=>role==='cash'?HELP_CASH:HELP_ORDER;
 // つながっている間は右上に小さく、問題があるときだけ赤い帯で知らせる。
 function renderMode(){
@@ -674,7 +674,7 @@ function askKey(a,id){
     const dup=tagInUse(n);
     // 同じ番号の札がまだ外にあるはずなら、一度止める。打ちまちがいか、「渡した」の押し忘れ。
     // 合っていれば、もう一度「決定」。札は手元にあるのだから、前の注文は渡し終わっている。押し忘れとして「渡した」にしておく。
-    if(dup&&!ask.warn){ask.warn=n+'番の札は、まだ渡していないことになっています（'+label(dup)+'）。合っていれば、もう一度「決定」';if(navigator.vibrate)navigator.vibrate([60,60,60]);renderAsk();return}
+    if(dup&&!ask.warn){ask.warn=n+'番は、'+label(dup)+'の注文がまだ終わっていません。札が戻ってきているなら、もう一度「決定」';if(navigator.vibrate)navigator.vibrate([60,60,60]);renderAsk();return}
     if(dup&&dup.status==='told')patchOrder(dup.id,{status:'done',doneAt:Date.now(),auto:true});
     const k=ask;ask=null;renderAsk();take(k.kind,k.flavors,n);return;
   }
@@ -732,14 +732,14 @@ document.addEventListener('click',e=>{
     // 渡した。押しまちがえたときは、下の「元に戻す」で戻る。
     const o=list().find(x=>x.id===id);if(!o||o.status!=='told')return;
     if(navigator.vibrate)navigator.vibrate(30);
-    lastAct={id,now:'done',patch:{status:'told'},text:num(o)+'番 '+(o.kind==='double'?'ダブル':fl(o))+'を渡した',at:Date.now()};setTimeout(render,6100);patchOrder(id,{status:'done',doneAt:Date.now()});
+    lastAct={id,now:'done',patch:{status:'told'},text:num(o)+'番 '+(o.kind==='double'?'ダブル':fl(o))+'を渡した',at:Date.now()};setTimeout(render,10100);patchOrder(id,{status:'done',doneAt:Date.now()});
   }
   else if(a==='assign'){
     // 空いた人に、列の先頭を頼む。ボタンに書いてあった注文がもう無ければ（もう1台が先に頼んだ等）、何もせず描き直す。
     const m=b.dataset.m,o=list().find(x=>x.id===id);
     if(!o||o.status!=='new'){render();return}
     if(navigator.vibrate)navigator.vibrate(40);
-    lastAct={id,now:'told',patch:{status:'new',maker:null},text:num(o)+'番を '+m+' に頼んだ',at:Date.now()};setTimeout(render,6100);patchOrder(id,{status:'told',maker:m,toldAt:Date.now()});
+    lastAct={id,now:'told',patch:{status:'new',maker:null},text:num(o)+'番を '+m+' に頼んだ',at:Date.now()};setTimeout(render,10100);patchOrder(id,{status:'told',maker:m,toldAt:Date.now()});
   }
   else if(a==='back'){
     // 直前にやったことを元に戻す。そのあと別の端末で状態が変わっていたら、何もしない。

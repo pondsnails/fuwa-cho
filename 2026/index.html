@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" type="image/png" sizes="32x32" href="../icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="../icon-192.png">
+<link rel="apple-touch-icon" href="../icon-180.png">
+<title>わたあめ帳</title>
+<style>
+/* レジアプリ（Airレジの注文入力画面）に寄せた見た目。白い帯＋薄い罫線、角の立ったタイルに色の下線、操作は青1色。
+   画面は上から 見出し／切り替え／一覧（ここだけスクロール）／注文ボタン。注文ボタンは親指の届く下に固定する。 */
+:root{
+  color-scheme:light;
+  --bg:#eff1f2; --panel:#ffffff; --strip:#f6f7f8; --ink:#333a40; --muted:#8a9198; --line:#dfe3e6;
+  --blue:#1fa9e0; --blue-press:#1789b8; --danger:#e8452c;
+  --f-plain:#a3abb1; --f-ichigo:#ee5a7c; --f-grape:#8a5bc2; --f-blue:#2a7fc0; --f-lemon:#e3b90f; --f-orange:#f59a38;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;overflow:hidden;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;font-size:16px;line-height:1.4;-webkit-text-size-adjust:100%}
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:520px;margin:0 auto;background:var(--panel)}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+header{flex:none;display:flex;align-items:center;justify-content:space-between;height:40px;padding:env(safe-area-inset-top,0px) 14px 0;box-sizing:content-box}
+h1{margin:0;font-size:15px;font-weight:700;letter-spacing:.04em}
+h1 span{margin-left:8px;font-size:12px;font-weight:400;letter-spacing:0;color:var(--muted)}
+.mode{margin-left:auto;font-size:11px;color:var(--muted)}
+.helpbtn{margin:0 -8px 0 6px;padding:0 8px;height:40px;font-size:13px;color:var(--blue)}
+.helpbtn:active{background:#d9eff9}
+.helpbtn.on{font-weight:700}
+/* 赤い帯は見出しの上に重ねて出す。出たり消えたりしても、下の画面は1pxも動かさない。 */
+.app{position:relative}
+.alert{position:absolute;top:0;left:0;right:0;z-index:4;display:flex;align-items:center;justify-content:center;min-height:calc(40px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 14px 0;background:var(--danger);color:#fff;font-size:13px;font-weight:700;text-align:center}
+.alert[hidden]{display:none}
+
+.seg{flex:none;display:flex;margin:0 12px 10px;border:1px solid var(--blue);border-radius:4px;overflow:hidden}
+.seg button{flex:1 1 auto;padding:0 4px;height:36px;font-size:12px;color:var(--blue);white-space:nowrap}
+.seg button+button{border-left:1px solid var(--blue)}
+.seg button:active{background:#d9eff9}
+.seg button.on{background:var(--blue);color:#fff}
+.seg b{margin-left:4px;font-variant-numeric:tabular-nums}
+.seg b.hot{display:inline-block;min-width:22px;padding:1px 6px;border-radius:11px;background:var(--danger);color:#fff}
+
+main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--bg);border-top:1px solid var(--line)}
+.o{max-height:120px;display:grid;grid-template-columns:2em minmax(0,1fr) auto;gap:6px;align-items:center;min-height:60px;padding:8px 8px 8px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+/* 未伝達の行は黄色く塗って、白い「済み」の行とひと目で区別する。5分以上待たせた行は赤み。 */
+.o.wait{background:#fff3b8;border-bottom-color:#ead98a}
+.o.wait.old{background:#ffd9d0;border-bottom-color:#eeb4a8}
+.o .no{font-weight:700;font-size:22px;font-variant-numeric:tabular-nums}
+.o .nm{font-weight:600;font-size:15px;overflow-wrap:anywhere}
+.o .nm small{display:block;font-weight:400;font-size:11px;color:var(--muted)}
+.o .nm small.late{color:var(--danger);font-weight:700}
+.o .r{display:flex;gap:5px;align-items:center}
+/* 伝えた行：押したボタンの側から青が広がり、押した文字だけ白抜きでその場に残る。少し見せてから畳む。 */
+.o.sent{color:#fff;background:linear-gradient(var(--blue),var(--blue)) right/100% 100% no-repeat;animation:wipe .16s ease-out}
+.o.sent .nm small{color:inherit;font-size:13px;font-weight:700}
+.o.sent .mk{background:none;color:transparent}
+.o.sent .mk.got{background:#fff;color:var(--blue)}
+.o.sent .x{visibility:hidden}
+.o.sent .sq{box-shadow:0 0 0 1px #fff}
+.o.sent.out{overflow:hidden;animation:fold .2s ease-in forwards}
+@keyframes wipe{from{background-size:0 100%}}
+@keyframes fold{to{max-height:0;min-height:0;padding-top:0;padding-bottom:0;opacity:0}}
+@media (prefers-reduced-motion:reduce){.o.sent,.o.sent.out{animation:none}}
+.o.gone{color:var(--muted)}
+.o.gone .no{font-weight:400}
+.o.gone .sq{opacity:.45}
+.sq{display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:2px}
+.mk{display:inline-flex;align-items:center;justify-content:center;width:46px;height:44px;border-radius:3px;background:var(--blue);color:#fff;font-weight:700;font-size:17px}
+.mk:active{background:#0c5f82}
+.x{display:inline-block;width:42px;height:44px;color:var(--muted);font-size:12px}
+.x:active,.link:active{background:#d9eff9;border-radius:3px}
+.x.arm,.x.arm:active{background:var(--danger);color:#fff;border-radius:3px;font-size:11px;font-weight:700;line-height:1.25;padding:0}
+.link{color:var(--blue);font-size:14px;min-height:44px;padding:0 8px}
+.who{display:inline-block;min-width:1.6em;text-align:center;font-weight:700;font-size:17px}
+.none{padding:28px 14px;color:var(--muted);font-size:14px;text-align:center}
+.none strong{display:block;margin-bottom:6px;font-size:16px;color:var(--ink)}
+
+table{width:100%;border-collapse:collapse;font-size:15px;background:var(--panel)}
+td,th{padding:11px 14px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+td:first-child,th:first-child{text-align:left}
+th{padding:7px 14px;font-weight:400;font-size:12px;color:var(--muted);background:var(--strip)}
+tfoot td{font-weight:700;font-size:18px}
+.sub{display:flex;background:var(--panel);border-bottom:1px solid var(--line)}
+.sub span{flex:1;padding:9px 0;text-align:center;font-size:12px;color:var(--muted)}
+.sub span+span{border-left:1px solid var(--line)}
+.sub b{display:block;font-size:20px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+/* 使い方：その場に書いてある一行の説明（.how）と、右上「使い方」で開く手順。 */
+.how{padding:6px 14px;font-size:12px;color:var(--ink);background:var(--strip);border-bottom:1px solid var(--line)}
+.how b{display:inline-block;min-width:1.5em;height:1.5em;margin-right:6px;border-radius:3px;background:var(--ink);color:#fff;font-weight:700;text-align:center;line-height:1.5em}
+.how small{margin-left:10px;font-size:11px;color:var(--muted)}
+.pin .how small{display:block;margin:1px 0 0 28px}
+.pad .how{margin:-10px -10px 8px;background:none;border-bottom:0;padding-top:8px;padding-bottom:0}
+/* いちばん古い未伝達は、どのタブでも・一覧をどこまで送っても、ここに出したままにする。 */
+.pin{flex:none;border-top:1px solid var(--line)}
+.pin .o{border-bottom:2px solid #c9b24a}
+.pin .o.old{border-bottom-color:#d98f80}
+.pin+main{border-top:0}
+.tag{display:inline-block;margin-right:6px;padding:0 6px;border-radius:2px;background:var(--ink);color:#fff;font-size:11px;font-weight:700;line-height:1.6}
+/* 伝達済み・集計・使い方を開いているときは、未伝達の1件を見出しつきの別枠にして、下の内容と切り離す。 */
+.pin.apart{border-bottom:10px solid var(--bg)}
+.pin.apart .o,.pin.apart .o.old{border-bottom:1px solid var(--line)}
+.pin.apart+main{border-top:1px solid var(--line)}
+.pinhead{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:36px;padding:6px 14px;background:#f5c400;color:#2b2500;font-size:13px;font-weight:700;text-align:left}
+.pinhead:active{background:#d9ad00}
+.pinhead span{font-weight:400;text-decoration:underline}
+.hh{margin:0;padding:16px 14px 7px;font-size:16px;font-weight:700;color:var(--ink);background:none;border-bottom:1px solid var(--line)}
+.ht{margin:0;padding:12px 14px;background:var(--panel);border-bottom:1px solid var(--line);font-size:15px;-webkit-user-select:text;user-select:text}
+.qa{margin:0;background:var(--panel)}
+.qa div{padding:10px 14px;border-bottom:1px solid var(--line)}
+.qa dt{font-size:13px;color:var(--muted)}
+.qa dd{margin:2px 0 0;font-size:15px;font-weight:600}
+.x.eg{display:inline-flex;align-items:center;justify-content:center}
+.steps{margin:0;padding:0;list-style:none;background:var(--panel)}
+.steps li{display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);font-size:17px;font-weight:600;-webkit-user-select:text;user-select:text}
+.steps li>b{font-size:22px;line-height:1.2}
+.steps small{display:block;margin-top:2px;font-size:13px;font-weight:400;color:var(--muted)}
+.steps i{display:inline-block;padding:0 6px;border-radius:3px;background:var(--blue);color:#fff;font-style:normal;font-weight:700}
+.sheet{position:fixed;top:0;bottom:0;left:0;right:0;z-index:5;display:flex;align-items:center;justify-content:center;padding:calc(20px + env(safe-area-inset-top,0px)) 16px calc(20px + env(safe-area-inset-bottom,0px));background:rgba(22,25,28,.6)}
+.sheet .box{display:flex;flex-direction:column;width:100%;max-width:440px;max-height:100%;background:var(--panel);border-radius:6px;overflow:hidden}
+.sheet[hidden]{display:none}
+.sheet header{position:relative;justify-content:center;height:46px;padding-top:0;border-bottom:1px solid var(--line)}
+.sheet header .helpbtn{position:absolute;right:6px;top:0;height:46px;margin:0;font-size:14px}
+.lead{margin:0;padding:18px 14px 6px;font-size:19px;font-weight:700;letter-spacing:.02em}
+.stp{border-bottom:1px solid var(--line)}
+.st{display:flex;align-items:flex-start;gap:10px;padding:13px 14px 12px;font-size:16px;font-weight:600;line-height:1.45}
+.st b{flex:none;width:1.65em;height:1.65em;margin-top:-1px;border-radius:3px;background:var(--ink);color:#fff;font-size:14px;line-height:1.65em;text-align:center}
+.eg{border-top:1px solid var(--line);pointer-events:none}
+.eg .o.sent{animation:none}
+.eg-x{display:inline-flex;align-items:center;justify-content:center}
+.egn{margin:0;padding:6px 14px 11px;font-size:12px;color:var(--muted)}
+.sheet .body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.sheet .foot{flex:none;padding:10px;border-top:1px solid var(--line)}
+.back{display:block;width:100%;height:48px;margin:0;border-radius:3px;background:var(--blue);color:#fff;font-weight:700}
+.back:active{background:#0c5f82}
+.cap{padding:7px 14px;font-size:12px;color:var(--muted);background:var(--strip);border-bottom:1px solid var(--line)}
+
+.pad{flex:none;position:relative;padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px));background:var(--strip);border-top:1px solid var(--line)}
+.last{display:none}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;height:66px;padding:0 2px;background:var(--panel);border:1px solid var(--c);border-bottom-width:4px;border-radius:3px}
+.tile .name{font-size:15px;font-weight:600;white-space:nowrap}
+.tile .price{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tile.wide{grid-column:1 / -1;flex-direction:row;gap:10px;height:50px;--c:var(--blue);color:var(--blue)}
+.tile.wide .price{color:inherit;opacity:.8}
+/* 押したボタンは、その色で塗りつぶす。押した瞬間（:active）と、押したあと（.hit / .sel / .on）で同じ見た目。 */
+.tile:active,.tile.hit,.tile.sel,.tile.on{background:var(--c);color:#fff}
+.tile[data-id=lemon]:active,.tile.hit[data-id=lemon],.tile.sel[data-id=lemon]{color:var(--ink)}
+.tile:active .price,.tile.hit .price,.tile.sel .price,.tile.on .price{color:inherit;opacity:.95}
+.tile.hit .price{font-size:14px;font-weight:700}
+.tile.on .price{padding:3px 10px;border:1px solid #fff;border-radius:3px;font-size:13px;opacity:1}
+/* 番号の表示は、レジの客面ディスプレイと同じ黒地に白。注文ボタンのすぐ上に出す。 */
+.toast{position:absolute;left:10px;right:10px;bottom:100%;margin-bottom:8px;padding:12px 16px;border-radius:3px;background:#16191c;color:#fff;font-weight:700;font-size:18px;text-align:center;pointer-events:none}
+
+/* タブレット・PC（横に広い画面）。お手本のAirレジのiPad画面にならう：
+   白い左の列に一覧（下線つきのタブ）、灰色の右の列に味のタイル、見出しは中央。
+   右下には客面ディスプレイ風の黒い表示で、直前の注文と今日の合計を出したままにする。スマホの見た目は変えない。 */
+@media (min-width:768px) and (min-height:500px){
+  .app{display:grid;grid-template-columns:minmax(360px,5fr) 6fr;grid-template-rows:auto auto auto auto minmax(0,1fr);max-width:1180px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+  .app>header{grid-column:1 / -1;grid-row:1;position:relative;height:48px;border-bottom:1px solid var(--line)}
+  .app>header h1{position:absolute;left:0;right:0;font-size:16px;text-align:center;pointer-events:none}
+  .app>.alert{min-height:48px;font-size:15px}
+  .seg{grid-column:1;grid-row:3;margin:0;border:0;border-bottom:1px solid var(--line);border-radius:0}
+  .seg button{height:48px;font-size:14px;color:var(--muted);border-bottom:3px solid transparent}
+  .seg button+button{border-left:0}
+  .seg button.on{background:none;color:var(--blue);font-weight:700;border-bottom-color:var(--blue)}
+  .pin{grid-column:1;grid-row:4;border-top:0}
+  main{grid-column:1;grid-row:5}
+  .pad{grid-column:2;grid-row:3 / span 3;display:flex;flex-direction:column;padding:16px;background:var(--bg);border-top:0;border-left:1px solid var(--line)}
+  .pad .how{margin:0 0 12px;padding:0;font-size:14px}
+  .tiles{gap:10px}
+  .tile{height:clamp(84px,14vh,118px);border-bottom-width:5px}
+  .tile .name{font-size:20px}
+  .tile .price{font-size:14px}
+  .tile.hit .price{font-size:17px}
+  .tile.wide{height:64px}
+  .tile.on .price{font-size:15px}
+  .toast{top:auto;bottom:16px;left:16px;right:16px;margin:0;padding:14px 16px;font-size:22px}
+  .toast:not([hidden]){display:flex;align-items:center;justify-content:center;min-height:126px}
+  .last{display:block;margin-top:auto;padding:14px 18px 12px;border-radius:3px;background:#16191c;color:#fff}
+  .last small{display:block;font-size:12px;opacity:.65}
+  .last .l1{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 14px;min-height:62px}
+  .last .l1 small{flex:0 0 100%}
+  .last .l1 b{font-size:40px;line-height:1.15;font-variant-numeric:tabular-nums}
+  .last .l1 span{font-size:21px;font-weight:600}
+  .last .l1 .ph{font-size:15px;font-weight:400;opacity:.65}
+  .last .l2{margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.22);font-size:14px;text-align:right}
+  .last .l2 b{margin:0 2px 0 6px;font-size:20px;font-variant-numeric:tabular-nums}
+}
+/* 縦向きのタブレットなど、2分割にすると右が狭い幅では、一覧の幅を固定して味の文字を小さくする。 */
+@media (min-width:768px) and (max-width:899px) and (min-height:500px){
+  .app{grid-template-columns:390px minmax(0,1fr)}
+  .tile .name{font-size:16px}
+  .tile .price{font-size:13px}
+  .last .l1 b{font-size:32px}
+  .last .l1 span{font-size:17px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1>わたあめ帳<span id="day"></span></h1><span class="mode" id="mode"></span><button class="helpbtn" id="helpbtn" data-act="help">使い方</button></header>
+  <div class="alert" id="alert" role="alert" hidden></div>
+  <nav class="seg" id="seg" aria-label="表示の切り替え"></nav>
+  <div class="pin" id="pin"></div>
+  <main id="pane">
+    <div id="queue"></div>
+    <div id="done" hidden></div>
+    <div id="gone" hidden></div>
+    <div id="sales" hidden></div>
+  </main>
+  <div class="pad">
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    <div class="how"><b>1</b>注文された味を押す</div>
+    <div class="tiles" id="tiles"></div>
+    <div class="last" id="last"></div>
+  </div>
+</div>
+
+<!-- 使い方は、まわりを暗くして真ん中に出す。暗い所を押しても閉じる。見出しの帯と「とじる」は注文の画面と同じ部品。 -->
+<div class="sheet" id="help" role="dialog" aria-label="使い方" hidden>
+  <div class="box">
+    <header><h1>使い方</h1><button class="helpbtn" data-act="helpOff">とじる</button></header>
+    <div class="body" id="helpbody"></div>
+    <div class="foot"><button class="back" data-act="helpOff">とじる</button></div>
+  </div>
+</div>
+
+<script>
+(function(){
+// Firebase Realtime Database のURL。空のままだと、この端末だけに保存する。
+const DB_URL='https://wataame-cho-default-rtdb.asia-southeast1.firebasedatabase.app';
+// true にすると日付ごとに番号と集計を分ける（毎日1番から）。
+const SPLIT_BY_DATE=true;
+
+const $=s=>document.querySelector(s);
+const yen=n=>'¥'+Number(n||0).toLocaleString('ja-JP');
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const hm=t=>{const d=new Date(t||0);return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0')};
+const FLAVORS=[
+  {id:'plain',name:'プレーン',price:200,c:'--f-plain'},
+  {id:'ichigo',name:'いちご',price:300,c:'--f-ichigo'},
+  {id:'grape',name:'グレープ',price:300,c:'--f-grape'},
+  {id:'blue',name:'ブルーハワイ',price:300,c:'--f-blue'},
+  {id:'lemon',name:'レモン',price:300,c:'--f-lemon'},
+  {id:'orange',name:'オレンジ',price:300,c:'--f-orange'}
+];
+const DOUBLE=400, F=Object.fromEntries(FLAVORS.map(f=>[f.id,f]));
+// 番号と集計は日付ごとに分ける。加えて、本番の10/11は朝9:15に一度リセットする：
+// 9:15より前に入れた分（開店前の練習）は別の箱に入り、9:15になると1番から始まる。
+const RESET=new Date(2026,9,11,9,15).getTime();
+function dayKey(){
+  if(!SPLIT_BY_DATE)return 'all';
+  const d=new Date(),r=new Date(RESET),k='d'+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  return d.getTime()<RESET&&d.toDateString()===r.toDateString()?k+'pre':k;
+}
+const root=k=>DB_URL?DB_URL.replace(/\/+$/,'')+'/wataame/'+k:'';
+let DAY=dayKey(), BASE=root(DAY), LS='wataame-cho-v3-'+DAY;
+const DAYLABEL=(new Date().getMonth()+1)+'/'+new Date().getDate();
+const LATE=5*60000; // これより長く未伝達の注文は、時刻を赤い「◯分前」にする。
+
+// server: 保存済みの注文（id→注文）。pend: まだ送れていない変更（id→差分）。
+let server={}, pend={}, online=false, loaded=false, es=null, lastBeat=0, t0=Date.now();
+let lastOrder=null, tab='queue', tabAt=0, stuck=false, pendAt=0, flash={}, dbl=null, armCancel=null, pendT={}, doneT={}, seq=0, chain=Promise.resolve(), lastTap={id:'',t:0}, toastT=0, flushing=false, again=false;
+
+function loadLocal(){try{const x=JSON.parse(localStorage.getItem(LS)||'null');if(x){if(!BASE)server=x.server||{};pend=x.pend||{}}}catch(e){}}
+function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(BASE?{pend}:{server,pend:{}}))}catch(e){}}
+function toast(msg,ms){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{t.hidden=true},ms||1600)}
+function fail(){toast('保存できなかった。電波を確認してもう一度',4000)}
+
+function req(method,path,body,headers){
+  const c=new AbortController(),t=setTimeout(()=>c.abort(),8000);
+  return fetch(BASE+path,{method,body:body===undefined?undefined:JSON.stringify(body),headers,signal:c.signal,cache:'no-store'}).finally(()=>clearTimeout(t));
+}
+const list=()=>Object.keys(server).map(id=>Object.assign({},server[id],pend[id],{id})).filter(o=>o&&o.no!=null);
+const nextNo=()=>Object.keys(server).reduce((a,id)=>Math.max(a,Number(server[id]&&server[id].no)||0),0)+1;
+
+// 番号そのものをキーにして「まだ無いときだけ書く」ので、2台同時でも同じ番号にはならない。
+async function addRemote(o){
+  let no=nextNo(),net=0;
+  for(let i=0;i<60;i++){
+    o.no=no;let r;
+    try{r=await req('PUT','/orders/n'+no+'.json',o,{'if-match':'null_etag'})}
+    catch(e){if(++net>=3)throw e;await sleep(700);continue}
+    if(r.ok){server['n'+no]=Object.assign({},o);return}
+    if(r.status===412){
+      let cur=null;try{cur=await r.json()}catch(e){}
+      if(cur){server['n'+no]=cur;if(cur.cid===o.cid)return}
+      no=Math.max(no+1,nextNo());continue;
+    }
+    throw new Error('http '+r.status);
+  }
+  throw new Error('busy');
+}
+async function addOrder(o){
+  if(BASE){if(!loaded)throw new Error('not loaded');await addRemote(o)}
+  else{o.no=nextNo();server['n'+o.no]=o;saveLocal()}
+}
+function patchOrder(id,patch){
+  if(BASE){pend[id]=Object.assign({},pend[id],patch);if(!pendAt){pendAt=Date.now();setTimeout(renderMode,2600)}saveLocal();render();flush()}
+  else{if(server[id])Object.assign(server[id],patch);saveLocal();render()}
+}
+// 送れていない変更を順に再送する。失敗したら残しておき、次の機会にもう一度。
+async function flush(){
+  if(!BASE)return;
+  if(flushing){again=true;return}
+  flushing=true;
+  do{
+    again=false;
+    for(const id of Object.keys(pend)){
+      const snap=JSON.stringify(pend[id]);
+      try{
+        const r=await req('PATCH','/orders/'+id+'.json',pend[id]);
+        if(!r.ok)throw new Error('http '+r.status);
+        if(server[id])Object.assign(server[id],JSON.parse(snap));
+        if(JSON.stringify(pend[id])===snap)delete pend[id];else again=true;
+      }catch(e){stuck=true;again=false;break}
+    }
+  }while(again);
+  if(!Object.keys(pend).length){stuck=false;pendAt=0}
+  saveLocal();flushing=false;render();
+}
+
+function setPath(path,data){
+  const seg=path.split('/').filter(Boolean);
+  if(!seg.length){server=data||{};return}
+  let t=server;
+  for(let i=0;i<seg.length-1;i++){if(typeof t[seg[i]]!=='object'||t[seg[i]]===null)t[seg[i]]={};t=t[seg[i]]}
+  const k=seg[seg.length-1];
+  if(data===null)delete t[k];else t[k]=data;
+}
+function beat(){lastBeat=Date.now();if(!online){online=true;flush()}}
+function connect(){
+  if(es)es.close();
+  lastBeat=Date.now();
+  es=new EventSource(BASE+'/orders.json');
+  es.addEventListener('put',e=>{const m=JSON.parse(e.data);setPath(m.path,m.data);loaded=true;beat();render()});
+  es.addEventListener('patch',e=>{const m=JSON.parse(e.data);Object.keys(m.data||{}).forEach(k=>setPath(m.path+'/'+k,m.data[k]));beat();render()});
+  es.addEventListener('keep-alive',()=>{beat();renderMode()});
+  es.onerror=()=>{online=false;renderMode();if(es.readyState===2){const me=es;setTimeout(()=>{if(es===me)connect()},3000)}};
+}
+
+const flv=o=>Array.isArray(o.flavors)?o.flavors:Object.values(o.flavors||{});
+const live=()=>list().filter(o=>o.status!=='cancel');
+const fl=o=>flv(o).map(f=>F[f]?F[f].name:f).join('＋');
+const label=o=>(o.kind==='double'?'ダブル ':'')+fl(o);
+const dots=o=>flv(o).map(f=>'<i class="sq" style="background:var('+(F[f]?F[f].c:'--line')+')"></i>').join('');
+
+// 中身が変わったときだけ書き換える。他の端末の更新で、押している最中のボタンが作り直されてタップが消えるのを防ぐ。
+function put(el,html){if(el.__h!==html){el.__h=html;el.innerHTML=html}}
+function renderTiles(){
+  // ダブルの案内はダブルのボタンの中に出す。上に行を足すと、押そうとしたボタンがずれるため。
+  put($('#tiles'),FLAVORS.map(f=>{
+    const first=dbl&&dbl[0]===f.id,going=pendT[f.id]>0,done=doneT[f.id];
+    const sub=going?'送信中':done?done.no+'番':first?'1つ目':dbl?'':'¥'+f.price;
+    return '<button class="tile'+(going||done?' hit':first?' sel':'')+'" style="--c:var('+f.c+')" data-act="pick" data-id="'+f.id+'"><span class="name">'+f.name+'</span>'+(sub?'<span class="price">'+sub+'</span>':'')+'</button>';
+  }).join('')+(dbl
+    ?'<button class="tile wide on" data-act="dbl"><span class="name">ダブル　'+(dbl.length?esc(F[dbl[0]].name)+'＋2つ目を選ぶ':'1つ目を選ぶ')+'</span><span class="price">やめる</span></button>'
+    :'<button class="tile wide" data-act="dbl"><span class="name">ダブル</span><span class="price">¥'+DOUBLE+'</span></button>'));
+}
+function row(o,now,oldest){
+  if(flash[o.id])return '<div class="o sent'+(flash[o.id].out?' out':'')+'"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>✓ '+esc(flash[o.id].m)+' に伝えた</small></span><span class="r">'+['A','B','C'].map(m=>'<span class="mk'+(m===flash[o.id].m?' got':'')+'">'+m+'</span>').join('')+'<span class="x"></span></span></div>';
+  const late=now-o.createdAt>LATE,when=late?Math.floor((now-o.createdAt)/60000)+'分前':hm(o.createdAt);
+  return '<div class="o wait'+(late?' old':'')+'"><span class="no">'+esc(o.no)+'</span>'
+    +'<span class="nm">'+dots(o)+esc(fl(o))+'<small'+(late?' class="late"':'')+'>'+(o.kind==='double'?'ダブル　':'')+(oldest?'<span class="tag">次に伝える</span>':'')+when+'</small></span>'
+    +'<span class="r">'+['A','B','C'].map(m=>'<button class="mk" data-act="told" data-m="'+m+'" data-id="'+esc(o.id)+'" aria-label="製造'+m+'に伝えた">'+m+'</button>').join('')
+    +(armCancel===o.id?'<button class="x arm" data-act="cancel2" data-id="'+esc(o.id)+'">本当に<br>消す</button>':'<button class="x" data-act="cancel" data-id="'+esc(o.id)+'" aria-label="'+esc(o.no)+'番を取り消す">取消</button>')
+    +'</span></div>';
+}
+function renderQueue(){
+  const w=list().filter(o=>o.status==='new'||flash[o.id]).sort((a,b)=>a.no-b.no),now=Date.now();
+  const how='<div class="how"><b>2</b>作る人に声をかけたら、その相手のボタンを押す<small>部室棟側の人から順に A、B、C</small></div>';
+  // いちばん古い1件は上に固定し、残りを一覧に並べる。
+  const here=tab==='queue',n=w.filter(o=>!flash[o.id]).length;
+  $('#pin').classList.toggle('apart',!here&&w.length>0);
+  put($('#pin'),here?how+(w.length?row(w[0],now,w.length>1):'')
+    :w.length?'<button class="pinhead" data-act="tab" data-id="queue">伝えてない注文 '+n+'件　次はこれ<span>一覧を見る</span></button>'+row(w[0],now,false):'');
+  put($('#queue'),w.length>1?w.slice(1).map(o=>row(o,now,false)).join('')
+    :'<div class="none">'+(BASE&&!loaded?'読み込み中':w.length?'伝えてない注文はこの1件だけです':'<strong>伝えてない注文はありません</strong>味を押すと、番号がついてここに出ます')+'</div>');
+}
+function renderDone(){
+  const all=list(),d=all.filter(o=>o.status==='told').sort((a,b)=>(b.toldAt||0)-(a.toldAt||0));
+  put($('#done'),d.length?'<div class="cap">A・B・C を押しまちがえたら「戻す」</div>'+d.slice(0,300).map(o=>'<div class="o"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+hm(o.toldAt)+'</small></span><span class="r"><span class="who">'+esc(o.maker||'?')+'</span><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button></span></div>').join(''):'<div class="none">まだありません</div>');
+  // 取り消した注文は専用のタブに残す。番号が飛んで見える理由が分かり、まちがって消したときに戻せる。
+  const c=all.filter(o=>o.status==='cancel').sort((a,b)=>(b.cancelAt||0)-(a.cancelAt||0));
+  put($('#gone'),c.length?'<div class="cap">まちがって消したら「戻す」</div>'+c.slice(0,300).map(o=>'<div class="o gone"><span class="no">'+esc(o.no)+'</span><span class="nm">'+dots(o)+esc(fl(o))+'<small>'+(o.kind==='double'?'ダブル　':'')+(o.cancelAt?hm(o.cancelAt)+' に取消':'取消')+'</small></span><span class="r"><button class="link" data-act="undo" data-id="'+esc(o.id)+'">戻す</button></span></div>').join(''):'<div class="none">取り消した注文はありません</div>');
+  return d.length;
+}
+function renderSales(){
+  const by={},mk={A:0,B:0,C:0};let tq=0,tt=0;
+  live().forEach(o=>{const k=o.kind==='double'?'ダブル':fl(o);by[k]=by[k]||{q:0,t:0};by[k].q++;by[k].t+=o.total;tq++;tt+=o.total;if(o.status==='told'&&o.maker in mk)mk[o.maker]++});
+  const rows=FLAVORS.map(f=>f.name).concat('ダブル').map(k=>'<tr><td>'+esc(k)+'</td><td>'+(by[k]?by[k].q:0)+'</td><td>'+yen(by[k]?by[k].t:0)+'</td></tr>').join('');
+  put($('#sales'),'<table><thead><tr><th>'+DAYLABEL+'の集計</th><th>個数</th><th>金額</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><td>合計</td><td>'+tq+'</td><td>'+yen(tt)+'</td></tr></tfoot></table>'
+    +'<div class="cap">A・B・C に伝えた数</div><div class="sub"><span><b>'+mk.A+'</b>A</span><span><b>'+mk.B+'</b>B</span><span><b>'+mk.C+'</b>C</span></div>');
+  return tt;
+}
+// 使い方：やること3つと、まちがえたときだけ。ユーザーと決めた文言なので、変えるときは先に案を見せる。
+const HELP='<p class="lead">やることは3つだけ</p>'
+  +'<div class="stp"><div class="st"><b>1</b><span>注文された味を押す</span></div></div>'
+  +'<div class="stp"><div class="st"><b>2</b><span>作る人に声で伝える</span></div></div>'
+  +'<div class="stp"><div class="st"><b>3</b><span>声をかけた相手のボタン<br>（A・B・C）を押す</span></div></div>'
+  +'<p class="ht">A・B・C は、作る人を部室棟側から順に。</p>'
+  +'<div class="cap">まちがえたら</div>'
+  +'<dl class="qa">'
+  +'<div><dt>味を押しまちがえた</dt><dd>「取消」を2回</dd></div>'
+  +'<div><dt>それ以外</dt><dd>上の「取消」か「伝えた」を開いて「戻す」</dd></div>'
+  +'</dl>';
+function renderTabs(nDone,total){
+  const nNew=list().filter(o=>o.status==='new').length;
+  put($('#seg'),[['queue','まだ伝えてない',nNew],['done','伝えた',nDone],['gone','取消',list().filter(o=>o.status==='cancel').length],['sales','集計','']].map(t=>'<button data-act="tab" data-id="'+t[0]+'"'+(tab===t[0]?' class="on" aria-current="true"':'')+'>'+t[1]+'<b'+(t[0]==='queue'&&nNew?' class="hot"':'')+'>'+t[2]+'</b></button>').join(''));
+  ['queue','done','gone','sales'].forEach(k=>{$('#'+k).hidden=tab!==k});
+}
+// つながっている間は右上に小さく、問題があるときだけ赤い帯で知らせる。
+function renderMode(){
+  const n=Object.keys(pend).length;
+  let t='',bad='';
+  if(!BASE)t='この端末のみ保存';
+  // 送信は普通0.3秒ほどで終わる。失敗したか、2.5秒たっても終わらないときだけ出す。
+  else if(n&&(stuck||Date.now()-pendAt>2500))bad='未送信 '+n+'件　電波が戻ると自動で送ります';
+  else if(!loaded&&Date.now()-t0<8000)t='読み込み中';
+  else if(n&&online)t='共有中';
+  else if(!loaded||!online)bad='つながらない　再接続中';
+  else t='共有中';
+  $('#mode').textContent=t;
+  const al=$('#alert');al.textContent=bad;al.hidden=!bad;
+}
+function render(){renderTiles();renderQueue();renderTabs(renderDone(),renderSales());renderMode();renderLast()}
+// 広い画面の右下に出したままにする表示：直前に入れた注文と、今日の件数・売上。
+function renderLast(){
+  let q=0,t=0;live().forEach(o=>{q++;t+=o.total});
+  put($('#last'),'<div class="l1"><small>直前の注文</small>'+(lastOrder?'<b>'+esc(lastOrder.no)+'番</b><span>'+esc(lastOrder.label)+'</span>':'<span class="ph">味を押すと、ここに番号が出ます</span>')+'</div>'
+    +'<div class="l2">注文<b>'+q+'</b>件　売上<b>'+yen(t)+'</b></div>');
+}
+function toBottom(){const m=$('#pane');m.scrollTop=m.scrollHeight}
+
+// 押した味をすぐ塗りつぶし、保存は裏で順番に行う。続けて押した分は待たせずに受け付ける。
+function take(kind,flavors){
+  const ids=flavors.filter((f,i)=>flavors.indexOf(f)===i);
+  const o={no:0,kind,flavors,total:kind==='double'?DOUBLE:F[flavors[0]].price,status:'new',createdAt:Date.now(),cid:Date.now().toString(36)+Math.random().toString(36).slice(2,8)};
+  ids.forEach(i=>{pendT[i]=(pendT[i]||0)+1;delete doneT[i]});
+  dbl=null;tab='queue';render();
+  if(navigator.vibrate)navigator.vibrate(20);
+  chain=chain.then(async()=>{
+    let ok=true;try{await addOrder(o)}catch(e){ok=false}
+    ids.forEach(i=>{
+      pendT[i]--;
+      if(ok){const k=++seq;doneT[i]={no:o.no,k};setTimeout(()=>{if(doneT[i]&&doneT[i].k===k){delete doneT[i];renderTiles()}},1200)}
+    });
+    if(ok){lastOrder={no:o.no,label:label(o)};toast(o.no+'番　'+label(o))}else fail();
+    render();if(ok&&tab==='queue')toBottom();
+  });
+}
+
+document.addEventListener('click',e=>{
+  if(e.target.id==='help'){e.target.hidden=true;return}
+  const b=e.target.closest('[data-act]');if(!b||b.disabled)return;
+  const a=b.dataset.act,id=b.dataset.id;
+  if(a==='pick'){
+    // 同じボタンの二重タップ（0.25秒以内）は1回として扱う。
+    const now=Date.now();if(lastTap.id===id&&now-lastTap.t<250)return;lastTap={id,t:now};
+    if(dbl){dbl.push(id);if(dbl.length===2)take('double',dbl.slice());else renderTiles()}else take('single',[id])
+  }
+  else if(a==='help'){put($('#helpbody'),HELP);$('#help').hidden=false;$('#helpbody').scrollTop=0}
+  else if(a==='helpOff')$('#help').hidden=true;
+  else if(a==='dbl'){dbl=dbl?null:[];renderTiles()}
+  else if(a==='tab'){tab=id;tabAt=Date.now();render();$('#pane').scrollTop=0}
+  else if(a==='told'){
+    // 押した行をしばらく青く残して、誰に伝えたかを見せてから伝達済みへ送る。
+    const m=b.dataset.m,o=list().find(x=>x.id===id);
+    const f=flash[id]={m,out:false};
+    setTimeout(()=>{if(flash[id]===f){f.out=true;renderQueue()}},900);
+    setTimeout(()=>{if(flash[id]===f){delete flash[id];renderQueue()}},1120);
+    if(navigator.vibrate)navigator.vibrate(40);
+    toast((o?o.no+'番　':'')+m+' に伝えた');
+    patchOrder(id,{status:'told',maker:m,toldAt:Date.now()});
+  }
+  else if(a==='undo'){const o=list().find(x=>x.id===id);patchOrder(id,{status:'new'});toast((o?o.no+'番を':'')+'「まだ伝えてない」に戻した')}
+  else if(a==='cancel'){armCancel=id;renderQueue();setTimeout(()=>{if(armCancel===id){armCancel=null;renderQueue()}},3000)}
+  else if(a==='cancel2'){const o=list().find(x=>x.id===id);armCancel=null;patchOrder(id,{status:'cancel',cancelAt:Date.now()});toast((o?o.no+'番を':'')+'取り消した')}
+});
+
+// 日付や9:15の区切りをまたいだら、開いたままの画面もその場で新しい箱に切り替える（再読み込みはしない）。
+function rollover(){
+  if(dayKey()===DAY)return false;
+  if(es){es.close();es=null}
+  DAY=dayKey();BASE=root(DAY);LS='wataame-cho-v3-'+DAY;
+  lastOrder=null;server={};pend={};flash={};pendT={};doneT={};dbl=null;armCancel=null;loaded=false;online=false;stuck=false;pendAt=0;t0=Date.now();tab='queue';
+  loadLocal();if(BASE)connect();render();
+  toast('番号をリセットしました。1番から',4000);
+  return true;
+}
+function wake(){
+  if(rollover()||!BASE)return;
+  if(!es||es.readyState===2||Date.now()-lastBeat>45000)connect();
+  flush();
+}
+// iOSは touchstart を聞いていないと :active（押した瞬間の塗りつぶし）が効かない。
+document.addEventListener('touchstart',()=>{},{passive:true});
+// 開いている間は画面を消灯させない。
+function awake(){try{if(navigator.wakeLock&&!document.hidden)navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}}
+document.addEventListener('visibilitychange',awake);awake();
+$('#day').textContent=DAYLABEL;
+loadLocal();if(Object.keys(pend).length){stuck=true;pendAt=Date.now()}render();
+$('#pane').addEventListener('scroll',()=>{tabAt=Date.now()},{passive:true});
+// 伝達済み・集計を開いたまま15秒さわらなければ、未伝達があるときは未伝達に戻す。
+setInterval(()=>{if(tab!=='queue'&&tab!=='help'&&Date.now()-tabAt>15000&&list().some(o=>o.status==='new')){tab='queue';render();$('#pane').scrollTop=0}},3000);
+if(BASE){
+  connect();
+  // Firebaseは30秒ごとに keep-alive を送る。途絶えたらつなぎ直す。
+  setInterval(()=>{if(rollover())return;if(Date.now()-lastBeat>75000){online=false;connect()}flush();render()},15000);
+  setInterval(rollover,2000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)wake()});
+  window.addEventListener('online',wake);
+  window.addEventListener('pageshow',e=>{if(e.persisted)wake()});
+}
+})();
+</script>
+</body>
+</html>

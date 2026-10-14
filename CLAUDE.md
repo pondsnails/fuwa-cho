@@ -2,10 +2,17 @@
 
 祭りのわたあめ屋台で使う注文記録ページ。受付の人がスマホで注文を入れ、作る人に伝えたら記録する。複数のスマホで同じ一覧を共有する。
 
-- 公開先: https://pondsnails.github.io/fuwa-cho/ （このリポジトリの main を GitHub Pages がそのまま配信）
+- 公開先: https://pondsnails.github.io/fuwa-cho/ （このリポジトリの main を GitHub Pages がそのまま配信）。2026-10-14 から、ここは来年版
 - 中身は `index.html` 1枚だけ。ビルドなし、外部ライブラリなし
 - 保存先は Firebase Realtime Database（REST + EventSource）。URLは `index.html` 先頭の `DB_URL`
 - 本番は 2026-10-11（祭り2日目）。本番中にスマホから直すことがある
+
+## 構成（2026-10-14〜。ユーザー了承）
+
+- **メインのページ（`index.html`）が来年版**。https://pondsnails.github.io/fuwa-cho/ 。会計は `#cash`、オーダー管理は `#order`。データは `/wataame2/{日付}/`
+- 今年（2026-10-11）の版は `2026/index.html` に移して残してある。データは `/wataame`。触らない
+- `next/index.html` は、メインへ飛ぶだけのページ（配ったリンク用）。中身はここでは直さない
+- 以降の説明にある「`next/index.html`」は、すべて今は `index.html` のこと。動作確認は `node tools/mock.js index.html`
 
 ## 本番中に直すときの決まり
 
